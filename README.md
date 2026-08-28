@@ -67,7 +67,7 @@ Y si de verdad necesitas el desenlace antes de seguir —una conciliación, un
 proceso por lotes— hay una espera con plazo:
 
 ```php
-$resuelto = $cpe->emitirYEsperar($payload, timeout: 30);
+$resuelto = $cpe->emitirYEsperar($payload, 30);   // 30 s de plazo
 ```
 
 ## Aceptado, observado, rechazado
