@@ -1,0 +1,47 @@
+{
+    "name": "esolutions/xmlperu",
+    "description": "Cliente PHP de la API de xmlperu.dev: firma y emisión de comprobantes electrónicos (CPE) a SUNAT/OSE, y administración de empresas emisoras.",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["sunat", "cpe", "facturacion-electronica", "peru", "pse", "ubl"],
+    "authors": [
+        {
+            "name": "Carlos Erique Gaspar",
+            "email": "eriquegasparcarlos@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6 || ^10.0 || ^11.0 || ^12.0",
+        "laravel/framework": "^9.0 || ^10.0 || ^11.0 || ^12.0 || ^13.0"
+    },
+    "suggest": {
+        "laravel/framework": "Para autodescubrimiento del ServiceProvider y leer el token de config(). No es obligatorio: los clientes funcionan standalone."
+    },
+    "autoload": {
+        "psr-4": {
+            "Esolutions\\XmlPeru\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Esolutions\\XmlPeru\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Esolutions\\XmlPeru\\XmlPeruServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
