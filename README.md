@@ -4,8 +4,9 @@ Cliente PHP de la API de [xmlperu.dev](https://xmlperu.dev): firma y emisión de
 comprobantes electrónicos (CPE) a SUNAT/OSE, y administración de empresas
 emisoras.
 
-- PHP **8.0+**, Laravel **9 → 13**, o **standalone** (sin framework).
-- Usa **Guzzle** directamente.
+- PHP **7.2+**, Laravel **5.7 → 13**, o **standalone** (sin framework).
+- Usa **Guzzle** directamente (`^6 || ^7 || ^8`), no el HTTP client de Illuminate,
+  que exige Laravel 7+.
 - **URL fija** dentro del paquete (`https://api.xmlperu.dev`): no es configurable
   ni inyectable. Lo único configurable es el token.
 

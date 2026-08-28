@@ -20,5 +20,7 @@ Tres decisiones que conviene conocer:
   cliente creyendo que facturó.
 - **La clave de idempotencia se deriva del comprobante**, no del azar: es lo que
   hace que reintentar un envío perdido en la red no duplique la emisión.
+- **Universal**: PHP 7.2+ y Laravel 5.7 → 13, igual que `esolutions/apiperudev`.
+  Verificado ejecutandolo —no solo compilandolo— en 7.2, 7.4, 8.1 y 8.4.
 - **El token del login se renueva solo** al toparse con un 401. Caduca en una
   hora, y sin esto un proceso largo se cae en mitad del lote.
