@@ -200,6 +200,41 @@ el comprobante en «Por enviar» y se manda cuando tú digas:
 $cpe->enviar($comprobante->externalId());
 ```
 
+## Si vienes de otro proveedor: manda tu XML
+
+Si ya tienes el comprobante armado, no hace falta que rehagas tu generador para
+pasarte al payload JSON. El camino XML acepta lo que ya produces.
+
+```php
+use Esolutions\XmlPeru\Cpe;
+
+// Login con usuario y clave, como en tu proveedor anterior
+$cpe = Cpe::desdeLogin('usuario', 'clave');
+
+// Firma y encola el envio: el reemplazo directo
+$c = $cpe->procesarXml('20000000001-01-F001-123', $miXml);
+
+// Consultas por nombre de archivo — no necesitas conocer nuestro external_id
+$estado = $cpe->consultarPorNombre('20000000001-01-F001-123');
+
+if ($estado->valido()) {
+    $cdr = $estado->cdr();   // ya viene en la consulta, no se vuelve a descargar
+}
+```
+
+| Metodo | Que hace |
+|---|---|
+| `procesarXml($nombreArchivo, $xml)` | Firma y encola el envio |
+| `firmarXml($nombreArchivo, $xml)` | Solo firma; el envio corre por tu cuenta |
+| `consultarPorNombre($nombreArchivo)` | Estado por `RUC-TIPO-SERIE-CORRELATIVO` |
+
+El `$xml` va en texto plano: el paquete lo codifica en base64 por ti.
+
+**La unica diferencia con tu proveedor anterior** es que la respuesta no trae el
+CDR, porque el envio no ocurre dentro de la peticion. Lo que hace valido al
+comprobante es la firma, y esa la tienes al instante; el desenlace llega por el
+webhook o consultando.
+
 ## Métodos del cliente de firma
 
 | Método | HTTP |
@@ -211,6 +246,9 @@ $cpe->enviar($comprobante->externalId());
 | `series($tipoDoc = null)` · `siguienteCorrelativo($tipoDoc, $serie)` | `GET /v1/cpe/series` |
 | `xml($externalId)` · `cdr($externalId)` | `GET /v1/cpe/{id}/xml` · `/cdr` |
 | `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` |
+| `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
+| `procesarXml($nombre, $xml)` | `POST /api/cpe/procesar` |
+| `consultarPorNombre($nombre)` | `GET /api/cpe/consultar/{filename}` |
 
 ## Tests
 

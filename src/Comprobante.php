@@ -180,9 +180,22 @@ class Comprobante
         return $this->cpe->xml($this->externalId());
     }
 
-    /** Descarga el CDR (ZIP). @return string */
+    /**
+     * CDR de SUNAT (ZIP).
+     *
+     * La consulta del camino XML ya lo trae en la misma respuesta; en ese caso
+     * se devuelve sin volver a la red.
+     *
+     * @return string
+     */
     public function cdr()
     {
+        $incluido = $this->dato('cdr');
+
+        if (is_string($incluido) && $incluido !== '') {
+            return $incluido;
+        }
+
         return $this->cpe->cdr($this->externalId());
     }
 

@@ -263,6 +263,111 @@ class Cpe
         return 1;
     }
 
+    // ── camino XML (migración desde otro proveedor) ──────────────────────────
+    //
+    // Para quien YA TIENE el XML construido y no va a rehacer su generador para
+    // pasarse a un payload JSON. Van contra la superficie de compatibilidad
+    // (`/api/cpe/*`), que existe justamente para que cambiar de proveedor sea
+    // cambiar la URL base y nada más.
+    //
+    // El nombre de archivo es el de SUNAT: RUC-TIPO-SERIE-CORRELATIVO
+    // (por ejemplo `20000000001-01-F001-123`), sin extensión.
+
+    /**
+     * Firma el XML y lo deja ahí: NO lo envía a SUNAT.
+     *
+     * Para quien quiere el XML firmado en la mano y se encarga del envío por su
+     * cuenta. Ojo: consume firma igual, porque lo que se cobra es firmar.
+     *
+     * @param  string $nombreArchivo  RUC-TIPO-SERIE-CORRELATIVO
+     * @param  string $xml            XML sin firmar (texto, no base64)
+     * @return Comprobante            Con `xmlFirmado()` ya disponible
+     *
+     * @throws \Esolutions\XmlPeru\Excepciones\ValidacionException
+     */
+    public function firmarXml($nombreArchivo, $xml)
+    {
+        $r = $this->peticion('POST', '/api/cpe/generar', array(
+            'nombre_archivo'    => $nombreArchivo,
+            'contenido_archivo' => base64_encode($xml),
+        ));
+
+        // La respuesta trae `estado => 200`, que es un código HTTP repetido y no
+        // un estado del comprobante. Se sustituye por el vocabulario de /v1 para
+        // que `estado()` signifique lo mismo en los dos caminos.
+        $r['estado']   = 'firmado';
+        $r['filename'] = $nombreArchivo;
+
+        return Comprobante::deEmision($this, $r);
+    }
+
+    /**
+     * Firma el XML y encola el envío a SUNAT. Es el reemplazo directo de lo que
+     * hacen SmartPSE, ValidaPSE y QPSE.
+     *
+     * Única diferencia con ellos: la respuesta no trae el CDR, porque el envío
+     * no ocurre dentro de la petición. El desenlace se consulta después con
+     * `consultarPorNombre()`, o llega por el webhook.
+     *
+     * @return Comprobante
+     */
+    public function procesarXml($nombreArchivo, $xml)
+    {
+        $r = $this->peticion('POST', '/api/cpe/procesar', array(
+            'nombre_archivo'    => $nombreArchivo,
+            'contenido_archivo' => base64_encode($xml),
+        ));
+
+        $r['filename'] = $nombreArchivo;
+
+        return Comprobante::deEmision($this, $r);
+    }
+
+    /**
+     * Estado de un comprobante por su nombre de archivo, que es como lo tienen
+     * identificado los sistemas que vienen de otro proveedor —ellos no conocen
+     * nuestro external_id.
+     *
+     * @return Comprobante
+     */
+    public function consultarPorNombre($nombreArchivo)
+    {
+        $r = $this->peticion('GET', '/api/cpe/consultar/' . rawurlencode($nombreArchivo));
+
+        return Comprobante::deConsulta($this, $this->normalizarConsultaXml($r, $nombreArchivo));
+    }
+
+    /**
+     * La consulta de compatibilidad responde con otros nombres de campo —y con
+     * `estado => 200` cuando está resuelto, que es un código HTTP disfrazado de
+     * estado—. Se traduce a la forma de /v1 para que un `Comprobante` signifique
+     * lo mismo venga de donde venga.
+     */
+    private function normalizarConsultaXml(array $r, $nombreArchivo)
+    {
+        $resultado = array_filter(array(
+            'code'    => isset($r['code']) ? $r['code'] : null,
+            'message' => isset($r['message']) ? $r['message'] : null,
+            'errors'  => isset($r['errors']) ? $r['errors'] : null,
+            'notes'   => isset($r['observaciones']) ? $r['observaciones'] : null,
+        ), function ($v) {
+            return $v !== null;
+        });
+
+        return array(
+            'external_id'   => isset($r['external_id']) ? $r['external_id'] : null,
+            'filename'      => $nombreArchivo,
+            'state_type_id' => isset($r['state_type_id']) ? $r['state_type_id'] : null,
+            'resuelto'      => ! empty($r['resuelto']),
+            'state'         => isset($r['message']) ? $r['message'] : null,
+            'ticket'        => isset($r['ticket']) ? $r['ticket'] : null,
+            'resultado'     => $resultado ? $resultado : null,
+            // El CDR viaja en la misma respuesta cuando ya existe: se decodifica
+            // aquí para no obligar a una descarga aparte.
+            'cdr'           => isset($r['cdr']) ? base64_decode($r['cdr'], true) : null,
+        );
+    }
+
     // ── archivos ─────────────────────────────────────────────────────────────
 
     /** XML firmado. @return string */

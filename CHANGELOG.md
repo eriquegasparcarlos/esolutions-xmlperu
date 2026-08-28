@@ -7,6 +7,10 @@ Primera versión. Cliente PHP de la API de xmlperu.dev.
 - `Cpe` — emitir, consultar, esperar el desenlace, correlativos por serie,
   descargar XML y CDR, enviar y reenviar.
 - `Cuenta` — alta y administración de empresas emisoras (token de cuenta).
+- **Camino XML** para quien migra de otro proveedor: `procesarXml()`,
+  `firmarXml()` y `consultarPorNombre()`, que se usan con `Cpe::desdeLogin()`.
+  Sin ellos el login quedaba huerfano: autenticaba a alguien que solo podia
+  emitir en JSON, que es justo lo que un migrante no tiene.
 - `Comprobante` — el objeto que devuelve emitir, con el bucle de espera dentro.
 - `Webhook` — verificación HMAC-SHA256 de las entregas de `cpe.resuelto`.
 - Excepciones por situación: `ValidacionException` (422, no se emitió),
