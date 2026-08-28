@@ -70,19 +70,94 @@ proceso por lotes— hay una espera con plazo:
 $resuelto = $cpe->emitirYEsperar($payload, 30);   // 30 s de plazo
 ```
 
-## Aceptado, observado, rechazado
-
-Los tres estados no significan lo mismo y confundirlos sale caro:
+## Estados: lo primero es saber si SUNAT ya contestó
 
 | Método | Qué pasó | Qué hacer |
 |---|---|---|
+| `pendiente()` | **SUNAT aún no se ha pronunciado** | Esperar. No es un fallo |
 | `aceptado()` | Aceptado limpio | Nada |
-| `observado()` | **Aceptado** con observaciones | Nada urgente: el comprobante es válido y está declarado |
+| `observado()` | **Aceptado** con observaciones | Nada urgente: es válido y está declarado |
 | `rechazado()` | Rechazado: no existe para SUNAT | Corregir y emitir de nuevo |
 | `valido()` | Aceptado u observado | La pregunta que casi siempre quieres hacer |
+| `resuelto()` | Ya hay desenlace, sea el que sea | Decidir |
 
-Tratar un observado como fallo lleva a re-emitir algo que SUNAT ya aceptó, y el
-segundo intento se lleva un `409`.
+### ⚠️ `valido() === false` no significa que algo haya fallado
+
+Mientras SUNAT no conteste, `valido()` devuelve `false` **igual que en un
+rechazo**. Confundir las dos cosas lleva a re-emitir un comprobante que estaba en
+camino, y el segundo intento se lleva un `409`.
+
+```php
+if (! $c->valido())   { reemitir(); }   // MAL — también entra lo que sigue en curso
+if ($c->rechazado())  { corregir(); }   // BIEN
+if ($c->pendiente())  { esperar(); }    // BIEN
+```
+
+Lo mismo con `observado()`: está **aceptado**. Tratarlo como fallo re-emite algo
+que SUNAT ya declaró.
+
+### Catálogo de estados
+
+`codigoEstado()` devuelve el código; hay constantes para no escribirlos a mano
+(`Comprobante::ESTADO_RECIBIDO`).
+
+| Código | Estado | Qué significa |
+|---|---|---|
+| `01` | Registrado | Firmado. Aún no salió — o se quedó a medias |
+| `02` | Por enviar | Firmado, esperando a que **tú** lo mandes (envío manual) |
+| `03` | Recibido | Enviado; SUNAT no contesta todavía, o lo está procesando |
+| `05` | Aceptado | Declarado, sin observaciones |
+| `07` | Observado | **Aceptado** con observaciones. Es válido |
+| `09` | Rechazado | No existe para SUNAT |
+
+Los tres primeros son etapas del camino; los tres últimos, desenlaces. Solo esos
+tres hacen `resuelto()` verdadero.
+
+## Qué trae la consulta
+
+`consultar()` devuelve un `Comprobante` con un accesor por campo. La respuesta
+cruda está en `datos()`, pero los accesores son el contrato: si mañana cambia un
+nombre de clave, ellos siguen valiendo.
+
+| Accesor | Clave | Qué es |
+|---|---|---|
+| `externalId()` | `external_id` | Nuestro identificador |
+| `nombreArchivo()` | `filename` | `RUC-TIPO-SERIE-CORRELATIVO` |
+| `tipoDoc()` | `document_type_id` | `01` factura, `03` boleta, `07` NC, `08` ND, `09` guía… |
+| `serie()` · `numero()` | `series` · `number` | |
+| `fechaEmision()` | `date_of_issue` | `Y-m-d` |
+| `hash()` | `hash` | Resumen de la firma |
+| `codigoEstado()` | `state_type_id` | Ver el catálogo de arriba |
+| `estado()` | `state` | El estado en palabras |
+| `resuelto()` · `pendiente()` | `resuelto` | Si SUNAT ya contestó |
+| `tieneFirma()` | `has_signed` | Si el XML firmado se puede descargar |
+| `tieneCdr()` | `has_cdr` | Si el CDR ya está |
+| `ticket()` | `ticket` | Solo en guías y resúmenes |
+| `resultado()` | `resultado` | Lo que dijo SUNAT — abajo |
+
+## Qué dijo SUNAT: `resultado()`
+
+`null` mientras no haya habido intento de envío. Cuando lo hay:
+
+| Accesor | Aceptado | Rechazado |
+|---|---|---|
+| `codigo()` | `"0"` | El código de SUNAT: `2335`, `3277`… |
+| `mensaje()` | «La Factura numero F001-42, ha sido aceptada» | El motivo |
+| `errores()` | vacío | Los motivos, uno por línea |
+| `observaciones()` | las del estado «Observado» | vacío |
+| `llegoASunat()` | `true` | `true`/`false`/`null` |
+
+**`codigo()` devuelve una cadena, no un entero:** el `"0"` de aceptación se
+compara como cadena.
+
+**`llegoASunat()` puede ser `null`, y ese `null` importa.** Significa «no se
+sabe», no «no llegó»: es lo que decide si reintentar es seguro. Si llegó, hay que
+consultar antes de reenviar —el correlativo puede estar consumido—; tratarlo como
+`false` haría reenviar algo que quizá ya está declarado.
+
+**`observaciones()` no es `advertencias()`.** Las primeras son de SUNAT, sobre un
+comprobante que **sí** aceptó. Las segundas las detectamos nosotros al emitir,
+antes de que SUNAT lo viera.
 
 ## Errores: cada uno pide una reacción distinta
 
@@ -191,14 +266,50 @@ if ($datos === null) {
 El cuerpo tiene que ser el **crudo**, sin decodificar ni re-serializar:
 cualquier reformateo cambia el HMAC.
 
-## Envío manual
+## Guías de remisión y resúmenes
 
-Si la empresa lleva el envío por su cuenta (`envio($ruc, 'manual')`), firmar deja
-el comprobante en «Por enviar» y se manda cuando tú digas:
+Se emiten igual que cualquier otro comprobante —`emitir()` o `procesarXml()`—
+pero SUNAT los procesa **por ticket**: el envío devuelve un identificador y la
+respuesta se recoge después.
+
+De preguntarle a SUNAT por ese ticket **nos encargamos nosotros**. Tú consultas
+el comprobante como siempre.
+
+```php
+$guia = $cpe->emitir($payload);          // tipoDoc 09 (remitente) o 31 (transportista)
+
+$estado = $cpe->consultar($guia->externalId());
+$estado->ticket();       // el de SUNAT — informativo, para cotejar ante una incidencia
+```
+
+`ticket()` es `null` en facturas y boletas: solo existe para guías (`09`, `31`) y
+resúmenes (`RC`, `RA`, `RR`).
+
+Cuenta con que tarden más. Una factura suele resolverse en segundos; una guía o
+un resumen pueden estar en `pendiente()` varios minutos, y eso es normal.
+
+Las guías necesitan además un acceso OAuth2 propio de SUNAT, distinto del resto.
+En pruebas no hay que configurar nada. Ver [la guía de guías de
+remisión](https://docs.xmlperu.dev/guias/guias-de-remision/).
+
+## `emitir()` y `enviar()`: cuándo hace falta cada uno
+
+**Normalmente `enviar()` no se usa.** `emitir()` firma y encola el envío él solo.
+
+Hace falta en dos casos:
+
+1. **La empresa lleva el envío por su cuenta** (`Cuenta::envio($ruc, 'manual')`).
+   Entonces `emitir()` firma y para: el comprobante queda en «Por enviar»
+   (`02`) hasta que tú lo mandes.
+2. **Un envío que se quedó sin salir** — agotó sus reintentos, o nunca llegó a
+   encolarse. Se reconoce por seguir en `01` o `02` mucho después de emitido.
 
 ```php
 $cpe->enviar($comprobante->externalId());
 ```
+
+Es idempotente: llamarlo repetido no envía el comprobante dos veces. Y sobre uno
+que SUNAT ya aceptó responde `409` en vez de fingir que lo encoló.
 
 ## Si vienes de otro proveedor: manda tu XML
 
@@ -245,7 +356,7 @@ webhook o consultando.
 | `esperar($externalId, $timeout, $intervalo)` | consultas hasta el desenlace |
 | `series($tipoDoc = null)` · `siguienteCorrelativo($tipoDoc, $serie)` | `GET /v1/cpe/series` |
 | `xml($externalId)` · `cdr($externalId)` | `GET /v1/cpe/{id}/xml` · `/cdr` |
-| `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` |
+| `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` — solo en envío manual o si se quedó sin salir |
 | `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
 | `procesarXml($nombre, $xml)` | `POST /api/cpe/procesar` |
 | `consultarPorNombre($nombre)` | `GET /api/cpe/consultar/{filename}` |

@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.2.0
+
+Todo esto sale de la revisión de un integrador que usó el paquete de verdad.
+
+### Añadido
+
+- **Accesores para lo que solo salía por `dato()`**: `ticket()`, `tieneCdr()`,
+  `tieneFirma()`, `llegoASunat()`, `codigo()`, `mensaje()`, `errores()`,
+  `observaciones()`, `tipoDoc()`, `serie()`, `numero()`, `fechaEmision()`.
+
+  `dato('has_cdr')` obligaba a conocer los nombres internos de la respuesta: si
+  cambiaba una clave, la integración se rompía en silencio y sin que fuera un
+  cambio declarado. Ahora esos nombres son detalle interno y los accesores son el
+  contrato.
+
+- **`pendiente()`**, para el estado que faltaba. `valido() === false` NO significa
+  que algo haya fallado: mientras SUNAT no conteste devuelve false igual que un
+  rechazo. Confundirlos lleva a re-emitir un comprobante que estaba en camino — le
+  costó una guía a quien revisó el paquete.
+
+- **Constantes del catálogo de estados** (`ESTADO_RECIBIDO`, `ESTADO_ACEPTADO`…),
+  que antes solo se deducían leyendo `const RESUELTOS`.
+
+### Documentado
+
+- La tabla de estados ahora incluye `pendiente()` y `resuelto()`, con el aviso
+  explícito sobre `valido()` y los tres códigos intermedios (01, 02, 03).
+- Qué trae la consulta: una fila por campo, con su accesor.
+- Qué trae `resultado()`: `"0"` en aceptación —cadena, no entero— y el código de
+  SUNAT en rechazo, con `errors[]` aparte. Y que `llegoASunat()` puede ser `null`,
+  que significa «no se sabe» y no «no llegó»: es lo que decide si reintentar es
+  seguro.
+- **Guías de remisión y resúmenes**: que el ticket es de SUNAT, que solo existe
+  para ellos, que de consultarlo nos encargamos nosotros, y que tardan más.
+- **Cuándo hace falta `enviar()`** frente a `emitir()`: normalmente nunca. Estaba
+  en la tabla de métodos sin una línea que lo explicara.
+
 ## v1.1.0
 
 ### Añadido
