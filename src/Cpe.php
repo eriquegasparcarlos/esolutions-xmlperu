@@ -376,10 +376,32 @@ class Cpe
         return $this->descarga('/v1/cpe/' . rawurlencode($externalId) . '/xml');
     }
 
-    /** CDR de SUNAT (ZIP). @return string */
+    /**
+     * CDR tal como lo entrega SUNAT: un ZIP con `dummy/` y `R-{nombre}.xml`.
+     *
+     * Es el formato que esperan los sistemas contables, así que este es el que
+     * hay que archivar. Si solo quieres leer el contenido, `cdrXml()`.
+     *
+     * @return string Binario del ZIP
+     */
     public function cdr($externalId)
     {
         return $this->descarga('/v1/cpe/' . rawurlencode($externalId) . '/cdr');
+    }
+
+    /**
+     * El XML del CDR ya extraído, sin envoltorio.
+     *
+     * Para leerlo —el código de respuesta, las observaciones— sin abrir el ZIP.
+     * Es el mismo contenido byte a byte que va dentro.
+     *
+     * Para archivar, guarda el ZIP: es lo que pide un sistema contable.
+     *
+     * @return string
+     */
+    public function cdrXml($externalId)
+    {
+        return $this->descarga('/v1/cpe/' . rawurlencode($externalId) . '/cdr?formato=xml');
     }
 
     // ── envío ────────────────────────────────────────────────────────────────

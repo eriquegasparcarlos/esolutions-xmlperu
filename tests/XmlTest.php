@@ -136,17 +136,35 @@ class XmlTest extends TestCase
         $this->assertSame('0', $c->resultado()['code']);
     }
 
-    public function test_el_cdr_que_viene_en_la_consulta_no_se_vuelve_a_descargar(): void
+    public function test_el_xml_del_cdr_que_viene_en_la_consulta_no_se_vuelve_a_pedir(): void
     {
         $cpe = $this->cpe(array($this->json(200, array(
             'success' => true, 'resuelto' => true, 'state_type_id' => '05',
-            'external_id' => 'abc-123', 'cdr' => base64_encode('PK-cdr'),
+            'external_id' => 'abc-123', 'cdr' => base64_encode('<ApplicationResponse/>'),
         ))));
 
         $c = $cpe->consultarPorNombre('20000000001-01-F001-1');
 
-        $this->assertSame('PK-cdr', $c->cdr());
-        $this->assertCount(1, $this->enviadas, 'El CDR ya venía: no hay que ir a buscarlo.');
+        // Lo que trae incrustado la consulta de compat es el CONTENIDO, no el
+        // envoltorio: por eso alimenta a cdrXml() y no a cdr().
+        $this->assertSame('<ApplicationResponse/>', $c->cdrXml());
+        $this->assertCount(1, $this->enviadas, 'El XML ya venía: no hay que ir a buscarlo.');
+    }
+
+    public function test_el_zip_del_cdr_siempre_se_pide(): void
+    {
+        $cpe = $this->cpe(array(
+            $this->json(200, array(
+                'success' => true, 'resuelto' => true, 'state_type_id' => '05',
+                'external_id' => 'abc-123', 'cdr' => base64_encode('<ApplicationResponse/>'),
+            )),
+            new Response(200, array('Content-Type' => 'application/zip'), 'PK-zip'),
+        ));
+
+        $c = $cpe->consultarPorNombre('20000000001-01-F001-1');
+
+        $this->assertSame('PK-zip', $c->cdr());
+        $this->assertStringContainsString('/cdr', (string) $this->enviadas[1]['request']->getUri());
     }
 
     public function test_un_rechazo_de_sunat_llega_con_su_motivo(): void

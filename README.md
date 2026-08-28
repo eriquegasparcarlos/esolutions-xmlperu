@@ -292,6 +292,24 @@ Las guías necesitan además un acceso OAuth2 propio de SUNAT, distinto del rest
 En pruebas no hay que configurar nada. Ver [la guía de guías de
 remisión](https://docs.xmlperu.dev/guias/guias-de-remision/).
 
+## Descargar el CDR
+
+```php
+$zip = $cpe->cdr($externalId);        // como lo entrega SUNAT — esto es lo que se archiva
+$xml = $cpe->cdrXml($externalId);     // solo el contenido, para leerlo
+```
+
+El ZIP trae `dummy/` y `R-{nombre}.xml`. Ese es el formato que esperan los
+sistemas contables, así que **archiva el ZIP**; usa el XML cuando solo quieras
+leer el código de respuesta o las observaciones. El contenido es el mismo byte a
+byte.
+
+Un matiz si vas a comparar checksums: el ZIP se **rearma** en la descarga, no es
+el archivo original de SUNAT. Es estructuralmente idéntico, pero las marcas de
+tiempo del contenedor no coinciden. El XML de dentro sí es el original.
+
+Los dos sirven igual para facturas, boletas, notas, **resúmenes y guías**.
+
 ## `emitir()` y `enviar()`: cuándo hace falta cada uno
 
 **Normalmente `enviar()` no se usa.** `emitir()` firma y encola el envío él solo.
@@ -355,7 +373,8 @@ webhook o consultando.
 | `consultar($externalId)` | `GET /v1/cpe/{id}` |
 | `esperar($externalId, $timeout, $intervalo)` | consultas hasta el desenlace |
 | `series($tipoDoc = null)` · `siguienteCorrelativo($tipoDoc, $serie)` | `GET /v1/cpe/series` |
-| `xml($externalId)` · `cdr($externalId)` | `GET /v1/cpe/{id}/xml` · `/cdr` |
+| `xml($externalId)` | `GET /v1/cpe/{id}/xml` |
+| `cdr($externalId)` · `cdrXml($externalId)` | `GET /v1/cpe/{id}/cdr` — ZIP de SUNAT · XML extraído |
 | `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` — solo en envío manual o si se quedó sin salir |
 | `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
 | `procesarXml($nombre, $xml)` | `POST /api/cpe/procesar` |

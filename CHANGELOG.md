@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.3.0
+
+### Añadido
+
+- **`cdrXml()`**, el XML del CDR sin envoltorio. `cdr()` devuelve el ZIP que
+  entrega SUNAT —`dummy/` + `R-{nombre}.xml`, que es lo que archiva un sistema
+  contable— y este da el contenido para leerlo, sin abrir el ZIP.
+
+### Corregido
+
+- **`Comprobante::cdr()` podía devolver dos cosas distintas.** La consulta del
+  camino XML trae el CDR incrustado, y ese incrustado es el CONTENIDO, no el
+  envoltorio: según de dónde viniera el comprobante, el mismo método devolvía un
+  ZIP o un XML. Ahora `cdr()` es siempre el ZIP y lo incrustado alimenta a
+  `cdrXml()`.
+
+  Lo introduje yo en la v1.1.0 al aprovechar el CDR incrustado para ahorrar una
+  llamada. La optimización estaba bien; mezclar los dos formatos bajo un mismo
+  nombre, no.
+
 ## v1.2.0
 
 Todo esto sale de la revisión de un integrador que usó el paquete de verdad.

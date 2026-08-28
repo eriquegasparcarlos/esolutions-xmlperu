@@ -358,14 +358,27 @@ class Comprobante
     }
 
     /**
-     * CDR de SUNAT (ZIP).
+     * CDR tal como lo entrega SUNAT: el ZIP con `dummy/` y `R-{nombre}.xml`.
+     *
+     * Es lo que hay que archivar. Siempre va a la red: lo que trae incrustado
+     * la consulta del camino XML es el contenido, no el envoltorio.
+     *
+     * @return string Binario del ZIP
+     */
+    public function cdr()
+    {
+        return $this->cpe->cdr($this->externalId());
+    }
+
+    /**
+     * El XML del CDR, sin envoltorio, para leerlo.
      *
      * La consulta del camino XML ya lo trae en la misma respuesta; en ese caso
      * se devuelve sin volver a la red.
      *
      * @return string
      */
-    public function cdr()
+    public function cdrXml()
     {
         $incluido = $this->dato('cdr');
 
@@ -373,7 +386,7 @@ class Comprobante
             return $incluido;
         }
 
-        return $this->cpe->cdr($this->externalId());
+        return $this->cpe->cdrXml($this->externalId());
     }
 
     // ── seguimiento ──────────────────────────────────────────────────────────
