@@ -47,12 +47,12 @@ class AnularTest extends TestCase
     {
         $cpe = $this->cpe(array($this->json(202, array(
             'success'     => true,
-            'estado'      => 'en_cola',
+            'status'      => 'queued',
             'external_id' => 'baja-999',
             'filename'    => '20000000001-RA-20260829-1',
             'hash'        => 'h',
             'xml'         => base64_encode('<VoidedDocuments/>'),
-            'anula'       => 'original-111',
+            'voids'       => 'original-111',
         ))));
 
         $baja = $cpe->anular('original-111', 'Error en el monto');
@@ -70,14 +70,14 @@ class AnularTest extends TestCase
         // SUNAT todavia puede negar.
         $cpe = $this->cpe(array(
             $this->json(200, array('success' => true, 'data' => array('document' => array(
-                'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true,
-                'anulado' => false,
-                'baja' => array('external_id' => 'baja-1', 'state_type_id' => '01', 'motivo' => 'Error'),
+                'external_id' => 'abc-123', 'status_code' => '05', 'resolved' => true,
+                'voided' => false,
+                'void' => array('external_id' => 'baja-1', 'status_code' => '01', 'reason' => 'Error'),
             )))),
             $this->json(200, array('success' => true, 'data' => array('document' => array(
-                'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true,
-                'anulado' => true, 'anulado_en' => '2026-08-29T00:18:45-05:00',
-                'baja' => array('external_id' => 'baja-1', 'state_type_id' => '05', 'motivo' => 'Error'),
+                'external_id' => 'abc-123', 'status_code' => '05', 'resolved' => true,
+                'voided' => true, 'voided_at' => '2026-08-29T00:18:45-05:00',
+                'void' => array('external_id' => 'baja-1', 'status_code' => '05', 'reason' => 'Error'),
             )))),
         ));
 
@@ -96,7 +96,7 @@ class AnularTest extends TestCase
     public function test_un_comprobante_sin_baja_lo_dice_sin_rodeos(): void
     {
         $cpe = $this->cpe(array($this->json(200, array('success' => true, 'data' => array('document' => array(
-            'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true, 'anulado' => false, 'baja' => null,
+            'external_id' => 'abc-123', 'status_code' => '05', 'resolved' => true, 'voided' => false, 'void' => null,
         ))))));
 
         $c = $cpe->consultar('abc-123');
@@ -109,14 +109,14 @@ class AnularTest extends TestCase
     public function test_el_motivo_viaja_en_el_cuerpo(): void
     {
         $cpe = $this->cpe(array($this->json(202, array(
-            'success' => true, 'estado' => 'en_cola', 'external_id' => 'b', 'xml' => base64_encode('<x/>'),
+            'success' => true, 'status' => 'queued', 'external_id' => 'b', 'xml' => base64_encode('<x/>'),
         ))));
 
         $cpe->anular('abc-123', 'Error en el monto');
 
         $cuerpo = json_decode((string) $this->enviadas[0]['request']->getBody(), true);
 
-        $this->assertSame('Error en el monto', $cuerpo['motivo']);
+        $this->assertSame('Error en el monto', $cuerpo['reason']);
         $this->assertStringContainsString('/anular', (string) $this->enviadas[0]['request']->getUri());
     }
 

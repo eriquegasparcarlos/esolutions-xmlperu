@@ -24,15 +24,15 @@ class Empresa
     /** @return string|null */
     public function ruc()
     {
-        return isset($this->datos['empresa']['ruc'])
-            ? $this->datos['empresa']['ruc']
-            : (isset($this->datos['empresa']['number']) ? $this->datos['empresa']['number'] : null);
+        return isset($this->datos['company']['ruc'])
+            ? $this->datos['company']['ruc']
+            : (isset($this->datos['company']['number']) ? $this->datos['company']['number'] : null);
     }
 
     /** Datos de la empresa. @return array */
     public function datos()
     {
-        return isset($this->datos['empresa']) ? $this->datos['empresa'] : array();
+        return isset($this->datos['company']) ? $this->datos['company'] : array();
     }
 
     /**
@@ -54,7 +54,7 @@ class Empresa
      */
     public function credenciales()
     {
-        return isset($this->datos['credenciales']) ? $this->datos['credenciales'] : array();
+        return isset($this->datos['credentials']) ? $this->datos['credentials'] : array();
     }
 
     /** Cliente de firma listo para emitir. @return Cpe */

@@ -64,7 +64,7 @@ class XmlTest extends TestCase
         $this->assertSame('20000000001-01-F001-1', $c->nombreArchivo());
         // La API devuelve estado=200, que es un código HTTP repetido y no un
         // estado del comprobante. Se traduce al vocabulario de /v1.
-        $this->assertSame('firmado', $c->estado());
+        $this->assertSame('signed', $c->estado());
     }
 
     public function test_el_xml_viaja_en_base64_con_los_nombres_de_campo_de_compat(): void
@@ -92,6 +92,7 @@ class XmlTest extends TestCase
                 'external_id' => 'abc-123',
                 'xml'         => base64_encode('<Invoice firmada="1"/>'),
             )),
+            // La respuesta de /api/cpe/enviar habla ESPAÑOL: es compat.
             $this->json(200, array(
                 'success'       => true,
                 'resuelto'      => true,
@@ -123,7 +124,7 @@ class XmlTest extends TestCase
             )),
             $this->json(202, array(
                 'success'     => true,
-                'estado'      => 'en_cola',
+                'status'      => 'queued',
                 'message'     => 'SUNAT no respondió en 5 segundos. El envío quedó encolado.',
                 'external_id' => 'abc-123',
             )),
@@ -171,14 +172,14 @@ class XmlTest extends TestCase
         $this->assertTrue($c->resuelto());
         $this->assertTrue($c->aceptado());
         $this->assertTrue($c->valido());
-        $this->assertSame('Aceptado por SUNAT.', $c->estado());
+        $this->assertSame('accepted', $c->estado());
         $this->assertSame('0', $c->resultado()['code']);
     }
 
     public function test_el_xml_del_cdr_que_viene_en_la_consulta_no_se_vuelve_a_pedir(): void
     {
         $cpe = $this->cpe(array($this->json(200, array(
-            'success' => true, 'resuelto' => true, 'state_type_id' => '05',
+            'success' => true, 'resolved' => true, 'status_code' => '05',
             'external_id' => 'abc-123', 'cdr' => base64_encode('<ApplicationResponse/>'),
         ))));
 
@@ -194,7 +195,7 @@ class XmlTest extends TestCase
     {
         $cpe = $this->cpe(array(
             $this->json(200, array(
-                'success' => true, 'resuelto' => true, 'state_type_id' => '05',
+                'success' => true, 'resolved' => true, 'status_code' => '05',
                 'external_id' => 'abc-123', 'cdr' => base64_encode('<ApplicationResponse/>'),
             )),
             new Response(200, array('Content-Type' => 'application/zip'), 'PK-zip'),
@@ -228,8 +229,8 @@ class XmlTest extends TestCase
     public function test_lo_que_sigue_pendiente_no_se_da_por_resuelto(): void
     {
         $cpe = $this->cpe(array($this->json(200, array(
-            'success' => true, 'resuelto' => false, 'estado' => '03',
-            'state_type_id' => '03', 'message' => 'Enviado a SUNAT, esperando respuesta.',
+            'success' => true, 'resolved' => false, 'estado' => '03',
+            'status_code' => '03', 'message' => 'Enviado a SUNAT, esperando respuesta.',
             'external_id' => 'abc-123',
         ))));
 

@@ -39,7 +39,7 @@ $empresa = $cuenta->crearEmpresa($RUC, 'EMPRESA XML SAC', '01', '01');
 echo "── Migración: login usuario/clave ─────────────────────────────────────\n";
 
 $cred = $empresa->credenciales();
-$cpe  = Cpe::desdeLogin($cred['usuario'], $cred['password']);
+$cpe  = Cpe::desdeLogin($cred['username'], $cred['password']);
 paso('desdeLogin (estilo QPSE)', (bool) $cpe->token());
 
 echo "\n── Firmar sin enviar ──────────────────────────────────────────────────\n";
@@ -51,14 +51,14 @@ $c = $cpe->firmarXml("$RUC-01-F001-20", $xml);
 
 paso('firmarXml devuelve el firmado', strpos((string) $c->xmlFirmado(), 'Signature') !== false,
     strlen((string) $c->xmlFirmado()) . ' bytes');
-paso('estado traducido a «firmado»', $c->estado() === 'firmado', (string) $c->estado());
+paso('estado traducido a «signed»', $c->estado() === 'signed', (string) $c->estado());
 paso('trae external_id', (bool) $c->externalId());
 paso('conserva el nombre de archivo', $c->nombreArchivo() === "$RUC-01-F001-20");
 
 echo "\n── Firmar y enviar (el reemplazo directo) ─────────────────────────────\n";
 
 $p = $cpe->procesarXml("$RUC-01-F001-22", file_get_contents($dir . "/xml-proc.xml"));
-paso('procesarXml encola', $p->estado() === 'en_cola', (string) $p->estado());
+paso('procesarXml resuelve o encola', in_array($p->estado(), array('accepted','queued'), true), (string) $p->estado());
 paso('trae external_id', (bool) $p->externalId());
 
 echo "\n── Consultar por nombre de archivo ────────────────────────────────────\n";

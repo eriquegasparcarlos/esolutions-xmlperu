@@ -158,29 +158,28 @@ class Comprobante
     // ── estado ───────────────────────────────────────────────────────────────
 
     /**
-     * `en_cola` o `por_enviar` recién emitido; después el nombre del estado
-     * («Aceptado», «Observado», «Rechazado»…).
+     * La palabra máquina del estado: `queued`, `to_send` o `to_summarize`
+     * recién emitido; después `registered`, `sent`, `accepted`, `observed`,
+     * `rejected`...
      *
      * @return string|null
      */
     public function estado()
     {
-        $estado = $this->dato('estado');
-
-        return $estado !== null ? $estado : $this->dato('state');
+        return $this->dato('status');
     }
 
     /** Código de estado del catálogo interno: 01, 02, 03, 04, 05, 07, 09. */
     public function codigoEstado()
     {
-        return $this->dato('state_type_id');
+        return $this->dato('status_code');
     }
 
     /** ¿SUNAT ya se pronunció? Mientras sea false, el desenlace no se conoce. */
     public function resuelto()
     {
-        if (array_key_exists('resuelto', $this->datos)) {
-            return (bool) $this->datos['resuelto'];
+        if (array_key_exists('resolved', $this->datos)) {
+            return (bool) $this->datos['resolved'];
         }
 
         return in_array((string) $this->codigoEstado(), self::RESUELTOS, true);
@@ -247,7 +246,7 @@ class Comprobante
      */
     public function resultado()
     {
-        $r = $this->dato('resultado');
+        $r = $this->dato('result');
 
         return is_array($r) ? $r : null;
     }
@@ -327,7 +326,7 @@ class Comprobante
     {
         $r = $this->resultado();
 
-        return isset($r['llego_a_sunat']) ? (bool) $r['llego_a_sunat'] : null;
+        return isset($r['reached_sunat']) ? (bool) $r['reached_sunat'] : null;
     }
 
     /**
@@ -342,7 +341,7 @@ class Comprobante
     {
         $r = $this->resultado();
 
-        return isset($r['origen']) ? $r['origen'] : null;
+        return isset($r['origin']) ? $r['origin'] : null;
     }
 
     /**
@@ -360,7 +359,7 @@ class Comprobante
     {
         $r = $this->resultado();
 
-        return isset($r['accion']) ? $r['accion'] : null;
+        return isset($r['action']) ? $r['action'] : null;
     }
 
     /**
@@ -389,13 +388,13 @@ class Comprobante
      */
     public function anulado()
     {
-        return (bool) $this->dato('anulado');
+        return (bool) $this->dato('voided');
     }
 
     /** Cuándo se anuló, en ISO 8601. `null` si no lo está. @return string|null */
     public function anuladoEn()
     {
-        return $this->dato('anulado_en');
+        return $this->dato('voided_at');
     }
 
     /**
@@ -412,7 +411,7 @@ class Comprobante
      */
     public function baja()
     {
-        $baja = $this->dato('baja');
+        $baja = $this->dato('void');
 
         return is_array($baja) ? $baja : null;
     }
@@ -422,7 +421,7 @@ class Comprobante
     {
         $baja = $this->baja();
 
-        return isset($baja['motivo']) ? $baja['motivo'] : null;
+        return isset($baja['reason']) ? $baja['reason'] : null;
     }
 
     /**
@@ -435,7 +434,7 @@ class Comprobante
      */
     public function anula()
     {
-        return $this->dato('anula');
+        return $this->dato('voids');
     }
 
     // ── archivos ─────────────────────────────────────────────────────────────

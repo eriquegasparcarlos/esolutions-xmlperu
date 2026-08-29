@@ -47,7 +47,7 @@ class ComprobanteTest extends TestCase
             'has_cdr'          => true,
             'ticket'           => null,
             'date_of_issue'    => '2026-08-28',
-            'state_type_id'    => '05',
+            'status_code'    => '05',
             'resuelto'         => true,
         ));
 
@@ -64,10 +64,10 @@ class ComprobanteTest extends TestCase
 
     public function test_el_ticket_solo_existe_en_guias_y_resumenes(): void
     {
-        $factura = $this->consulta(array('state_type_id' => '05', 'ticket' => null));
+        $factura = $this->consulta(array('status_code' => '05', 'ticket' => null));
         $this->assertNull($factura->ticket());
 
-        $guia = $this->consulta(array('state_type_id' => '05', 'ticket' => 'test-db8a7cdb'));
+        $guia = $this->consulta(array('status_code' => '05', 'ticket' => 'test-db8a7cdb'));
         $this->assertSame('test-db8a7cdb', $guia->ticket());
     }
 
@@ -75,13 +75,13 @@ class ComprobanteTest extends TestCase
     {
         // La trampa: `valido()` es false en los dos casos, y confundirlos lleva a
         // re-emitir un comprobante que estaba en camino.
-        $enProceso = $this->consulta(array('state_type_id' => '03', 'resuelto' => false));
+        $enProceso = $this->consulta(array('status_code' => '03', 'resolved' => false));
 
         $this->assertTrue($enProceso->pendiente());
         $this->assertFalse($enProceso->valido());
         $this->assertFalse($enProceso->rechazado(), 'En proceso NO es un rechazo.');
 
-        $rechazado = $this->consulta(array('state_type_id' => '09', 'resuelto' => true));
+        $rechazado = $this->consulta(array('status_code' => '09', 'resolved' => true));
 
         $this->assertFalse($rechazado->pendiente());
         $this->assertFalse($rechazado->valido());
@@ -91,9 +91,9 @@ class ComprobanteTest extends TestCase
     public function test_una_aceptacion_trae_codigo_cero(): void
     {
         $c = $this->consulta(array(
-            'state_type_id' => '05',
-            'resuelto'      => true,
-            'resultado'     => array('code' => '0', 'message' => 'La Factura numero F001-42, ha sido aceptada'),
+            'status_code' => '05',
+            'resolved'      => true,
+            'result'        => array('code' => '0', 'message' => 'La Factura numero F001-42, ha sido aceptada'),
         ));
 
         $this->assertSame('0', $c->codigo());
@@ -104,9 +104,9 @@ class ComprobanteTest extends TestCase
     public function test_un_rechazo_trae_el_codigo_de_sunat_y_los_errores_aparte(): void
     {
         $c = $this->consulta(array(
-            'state_type_id' => '09',
-            'resuelto'      => true,
-            'resultado'     => array(
+            'status_code' => '09',
+            'resolved'      => true,
+            'result'        => array(
                 'code'    => '2335',
                 'message' => 'El comprobante fue rechazado.',
                 'errors'  => array('El dato ingresado en el precio unitario no cumple.'),
@@ -122,9 +122,9 @@ class ComprobanteTest extends TestCase
         // `observaciones()` son de SUNAT sobre un comprobante que SÍ aceptó;
         // `advertencias()` son las que detectamos nosotros antes de enviarlo.
         $c = $this->consulta(array(
-            'state_type_id' => '07',
-            'resuelto'      => true,
-            'resultado'     => array('code' => '4000', 'notes' => array('El campo domicilio fiscal está vacío.')),
+            'status_code' => '07',
+            'resolved'      => true,
+            'result'        => array('code' => '4000', 'notes' => array('El campo domicilio fiscal está vacío.')),
         ));
 
         $this->assertTrue($c->observado());
@@ -137,19 +137,19 @@ class ComprobanteTest extends TestCase
     {
         // Es lo que decide si reintentar es seguro. Un null tratado como false
         // haría reenviar un comprobante que quizá ya está declarado.
-        $sinIntento = $this->consulta(array('state_type_id' => '01'));
+        $sinIntento = $this->consulta(array('status_code' => '01'));
         $this->assertNull($sinIntento->llegoASunat());
 
         $noLlego = $this->consulta(array(
-            'state_type_id' => '01',
-            'resultado'     => array('llego_a_sunat' => false),
+            'status_code' => '01',
+            'result'        => array('reached_sunat' => false),
         ));
         $this->assertFalse($noLlego->llegoASunat());
 
         $llego = $this->consulta(array(
-            'state_type_id' => '09',
-            'resuelto'      => true,
-            'resultado'     => array('llego_a_sunat' => true),
+            'status_code' => '09',
+            'resolved'      => true,
+            'result'        => array('reached_sunat' => true),
         ));
         $this->assertTrue($llego->llegoASunat());
     }
@@ -159,27 +159,27 @@ class ComprobanteTest extends TestCase
         // La forma real del caso timeout en /v1: llego_a_sunat viaja en null
         // -«no se sabe»- y accion dice que toca consultar, no reenviar.
         $c = $this->consulta(array(
-            'state_type_id' => '03',
-            'resuelto'      => false,
-            'resultado'     => array(
+            'status_code' => '03',
+            'resolved'      => false,
+            'result'        => array(
                 'message'       => 'Tiempo de espera agotado esperando la respuesta de SUNAT.',
-                'origen'        => 'timeout',
-                'accion'        => 'revisar',
-                'llego_a_sunat' => null,
+                'origin'        => 'timeout',
+                'action'        => 'review',
+                'reached_sunat' => null,
             ),
         ));
 
         $this->assertNull($c->llegoASunat(), 'null explicito = no se sabe, nunca false.');
         $this->assertSame('timeout', $c->origen());
-        $this->assertSame('revisar', $c->accion());
+        $this->assertSame('review', $c->accion());
     }
 
     public function test_sin_fallo_no_hay_origen_ni_accion(): void
     {
         $c = $this->consulta(array(
-            'state_type_id' => '05',
-            'resuelto'      => true,
-            'resultado'     => array('code' => '0', 'message' => 'aceptada', 'llego_a_sunat' => true),
+            'status_code' => '05',
+            'resolved'      => true,
+            'result'        => array('code' => '0', 'message' => 'aceptada', 'reached_sunat' => true),
         ));
 
         $this->assertNull($c->origen());
@@ -188,7 +188,7 @@ class ComprobanteTest extends TestCase
 
     public function test_el_numero_es_un_entero_como_lo_manda_la_api(): void
     {
-        $c = $this->consulta(array('state_type_id' => '01', 'number' => 42));
+        $c = $this->consulta(array('status_code' => '01', 'number' => 42));
 
         $this->assertSame(42, $c->numero(), 'La API manda un entero; el paquete no lo disfraza.');
     }

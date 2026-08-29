@@ -58,7 +58,7 @@ class CpeTest extends TestCase
     {
         return $this->json(202, array_merge(array(
             'success'     => true,
-            'estado'      => 'en_cola',
+            'status'      => 'queued',
             'external_id' => 'abc-123',
             'filename'    => '20000000001-01-F001-1',
             'hash'        => 'hash-x',
@@ -70,9 +70,9 @@ class CpeTest extends TestCase
     {
         return $this->json(200, array('success' => true, 'data' => array('document' => array_merge(array(
             'external_id'   => 'abc-123',
-            'state_type_id' => '03',
+            'status_code' => '03',
             'state'         => 'Pendiente',
-            'resuelto'      => false,
+            'resolved'      => false,
         ), $extra))));
     }
 
@@ -83,7 +83,7 @@ class CpeTest extends TestCase
         $c = $this->cpe(array($this->emision()))->emitir($this->payload());
 
         $this->assertSame('abc-123', $c->externalId());
-        $this->assertSame('en_cola', $c->estado());
+        $this->assertSame('queued', $c->estado());
         // El XML firmado llega en la propia respuesta: es lo que hace válido al
         // comprobante y permite imprimir sin esperar al CDR.
         $this->assertSame('<Invoice/>', $c->xmlFirmado());
@@ -203,7 +203,7 @@ class CpeTest extends TestCase
         $cpe = $this->cpe(array(
             $this->emision(),
             $this->documento(),                                                    // sigue pendiente
-            $this->documento(array('state_type_id' => '05', 'state' => 'Aceptado', 'resuelto' => true)),
+            $this->documento(array('status_code' => '05', 'state' => 'Aceptado', 'resolved' => true)),
         ));
 
         $resuelto = $cpe->emitir($this->payload())->esperar(30, 1);
@@ -219,7 +219,7 @@ class CpeTest extends TestCase
         // fallo lleva a re-emitir algo que SUNAT ya aceptó, y el segundo intento
         // se lleva un 409.
         $cpe = $this->cpe(array(
-            $this->documento(array('state_type_id' => '07', 'state' => 'Observado', 'resuelto' => true)),
+            $this->documento(array('status_code' => '07', 'state' => 'Observado', 'resolved' => true)),
         ));
 
         $c = $cpe->consultar('abc-123');
@@ -233,7 +233,7 @@ class CpeTest extends TestCase
     public function test_un_rechazo_de_sunat_se_distingue_del_resto(): void
     {
         $cpe = $this->cpe(array(
-            $this->documento(array('state_type_id' => '09', 'state' => 'Rechazado', 'resuelto' => true)),
+            $this->documento(array('status_code' => '09', 'state' => 'Rechazado', 'resolved' => true)),
         ));
 
         $c = $cpe->consultar('abc-123');
@@ -261,7 +261,7 @@ class CpeTest extends TestCase
     public function test_esperar_no_consulta_si_ya_esta_resuelto(): void
     {
         $cpe = $this->cpe(array(
-            $this->documento(array('state_type_id' => '05', 'resuelto' => true)),
+            $this->documento(array('status_code' => '05', 'resolved' => true)),
         ));
 
         $c = $cpe->consultar('abc-123')->esperar(30, 1);

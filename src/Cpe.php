@@ -295,7 +295,7 @@ class Cpe
         // La respuesta trae `estado => 200`, que es un código HTTP repetido y no
         // un estado del comprobante. Se sustituye por el vocabulario de /v1 para
         // que `estado()` signifique lo mismo en los dos caminos.
-        $r['estado']   = 'firmado';
+        $r['status']   = 'signed';
         $r['filename'] = $nombreArchivo;
 
         return Comprobante::deEmision($this, $r);
@@ -331,7 +331,7 @@ class Cpe
 
         // Dos formas según el desenlace: resuelto trae la respuesta de SUNAT
         // (misma forma que la consulta); encolado trae solo el acuse.
-        if (! empty($r['resuelto'])) {
+        if (! empty($r['resuelto']) || ! empty($r['resolved'])) {
             return Comprobante::deConsulta($this, $this->normalizarConsultaXml($r, $nombreArchivo));
         }
 
@@ -394,10 +394,11 @@ class Cpe
     private function normalizarConsultaXml(array $r, $nombreArchivo)
     {
         $resultado = array_filter(array(
-            'code'    => isset($r['code']) ? $r['code'] : null,
-            'message' => isset($r['message']) ? $r['message'] : null,
-            'errors'  => isset($r['errors']) ? $r['errors'] : null,
-            'notes'   => isset($r['observaciones']) ? $r['observaciones'] : null,
+            'code'          => isset($r['code']) ? $r['code'] : null,
+            'message'       => isset($r['message']) ? $r['message'] : null,
+            'errors'        => isset($r['errors']) ? $r['errors'] : null,
+            'notes'         => isset($r['observaciones']) ? $r['observaciones'] : null,
+            'reached_sunat' => isset($r['llego_a_sunat']) ? $r['llego_a_sunat'] : null,
         ), function ($v) {
             return $v !== null;
         });
@@ -405,15 +406,29 @@ class Cpe
         return array(
             'external_id'   => isset($r['external_id']) ? $r['external_id'] : null,
             'filename'      => $nombreArchivo,
-            'state_type_id' => isset($r['state_type_id']) ? $r['state_type_id'] : null,
-            'resuelto'      => ! empty($r['resuelto']),
-            'state'         => isset($r['message']) ? $r['message'] : null,
+            // Claves del contrato /v1: la consulta compat responde en español
+            // y aquí se normaliza para que el Comprobante lea lo mismo siempre.
+            'status_code'   => isset($r['state_type_id']) ? $r['state_type_id'] : null,
+            'status'        => isset($r['state_type_id']) ? self::palabraDeEstado($r['state_type_id']) : null,
+            'resolved'      => ! empty($r['resuelto']),
             'ticket'        => isset($r['ticket']) ? $r['ticket'] : null,
-            'resultado'     => $resultado ? $resultado : null,
+            'result'        => $resultado ? $resultado : null,
             // El CDR viaja en la misma respuesta cuando ya existe: se decodifica
             // aquí para no obligar a una descarga aparte.
             'cdr'           => isset($r['cdr']) ? base64_decode($r['cdr'], true) : null,
         );
+    }
+
+    /** La palabra máquina de /v1 para un código del catálogo. */
+    private static function palabraDeEstado($codigo)
+    {
+        $mapa = array(
+            '01' => 'registered', '02' => 'to_send', '03' => 'sent',
+            '04' => 'to_summarize', '05' => 'accepted', '07' => 'observed',
+            '09' => 'rejected',
+        );
+
+        return isset($mapa[(string) $codigo]) ? $mapa[(string) $codigo] : null;
     }
 
     // ── archivos ─────────────────────────────────────────────────────────────
@@ -504,7 +519,7 @@ class Cpe
         $r = $this->peticion(
             'POST',
             '/v1/cpe/' . rawurlencode($externalId) . '/anular',
-            array('motivo' => $motivo),
+            array('reason' => $motivo),
             array('Idempotency-Key' => 'xmlperu-baja-' . hash('sha256', $externalId . '|' . $motivo))
         );
 

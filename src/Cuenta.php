@@ -55,7 +55,7 @@ class Cuenta
     {
         $r = $this->http->json('GET', '/v1/empresas');
 
-        return isset($r['data']['empresas']) ? $r['data']['empresas'] : array();
+        return isset($r['data']['companies']) ? $r['data']['companies'] : array();
     }
 
     /** Una empresa por RUC. @return array */
@@ -63,7 +63,7 @@ class Cuenta
     {
         $r = $this->http->json('GET', '/v1/empresas/' . rawurlencode($ruc));
 
-        return isset($r['data']['empresa']) ? $r['data']['empresa'] : array();
+        return isset($r['data']['company']) ? $r['data']['company'] : array();
     }
 
     /**
@@ -85,10 +85,10 @@ class Cuenta
     {
         $r = $this->http->json('POST', '/v1/empresas', array(
             'ruc'          => $ruc,
-            'razon_social' => $razonSocial,
-            'tipo_plan'    => $tipoPlan,
-            'tipo_entorno' => $tipoEntorno,
-            'confirmar'    => (bool) $confirmar,
+            'business_name' => $razonSocial,
+            'plan_type'     => $tipoPlan,
+            'environment'   => $tipoEntorno,
+            'confirm'      => (bool) $confirmar,
         ));
 
         return new Empresa(isset($r['data']) ? $r['data'] : array());
@@ -126,7 +126,7 @@ class Cuenta
     {
         $r = $this->http->json('GET', '/v1/empresas/' . rawurlencode($ruc) . '/credenciales');
 
-        return isset($r['data']['credenciales']) ? $r['data']['credenciales'] : array();
+        return isset($r['data']['credentials']) ? $r['data']['credentials'] : array();
     }
 
     /**
@@ -148,7 +148,7 @@ class Cuenta
     public function plan($ruc, $tipoPlan)
     {
         return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/plan', array(
-            'tipo_plan' => $tipoPlan,
+            'plan_type' => $tipoPlan,
         ));
     }
 
@@ -159,7 +159,7 @@ class Cuenta
     public function entorno($ruc, $tipoEntorno)
     {
         return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/entorno', array(
-            'tipo_entorno' => $tipoEntorno,
+            'environment' => $tipoEntorno,
         ));
     }
 
@@ -175,7 +175,7 @@ class Cuenta
     public function envio($ruc, $modo)
     {
         return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/envio', array(
-            'modo' => $modo,
+            'mode' => self::modoEnIngles($modo),
         ));
     }
 
@@ -196,36 +196,47 @@ class Cuenta
     public function boletas($ruc, $modo)
     {
         return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/boletas', array(
-            'modo' => $modo,
+            'mode' => self::modoEnIngles($modo),
         ));
     }
 
     /**
-     * Cuándo responde el envío de esta empresa.
+     * Cuándo responde el envío de esta empresa en la superficie de migración.
      *
-     * `inmediata` (por defecto) responde en el acto y el CDR se recoge con una
-     * consulta. `esperar` aguarda unos segundos a que SUNAT resuelva y devuelve
-     * el CDR en la misma llamada.
+     * `wait` (por defecto): `/api/cpe/enviar` aguarda unos segundos a SUNAT y
+     * devuelve el CDR en la misma llamada, como las plataformas de origen.
+     * `immediate` responde en el acto —para quien manda en lote— y el CDR se
+     * recoge consultando.
      *
-     * Es para quien viene de otro proveedor y su código lee el CDR de la
-     * respuesta del envío: con `esperar` sigue leyéndolo de ahí, sin tocar nada.
-     *
-     * Alcance: solo `procesarXml()` —la llamada por venta— dentro de la
-     * superficie de compatibilidad. En `/v1` la respuesta es siempre inmediata,
-     * y `enviar()` tampoco espera: ese camino es para mandar cuando tú decidas,
-     * a menudo en lote, y esperar en cada comprobante saldría caro.
-     *
+     * Solo afecta a `/api/cpe/*`; en `/v1` la respuesta es siempre inmediata.
      * Y solo a facturas, boletas y notas: los resúmenes y las guías los resuelve
      * SUNAT por ticket, así que ahí no hay CDR que esperar.
      *
-     * @param  string $modo 'inmediata' | 'esperar'
+     * @param  string $modo 'wait' | 'immediate' (se aceptan 'esperar'/'inmediata')
      * @return array
      */
     public function respuesta($ruc, $modo)
     {
         return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/respuesta', array(
-            'modo' => $modo,
+            'mode' => self::modoEnIngles($modo),
         ));
+    }
+
+    /**
+     * El API habla inglés (`automatic`, `summary`, `wait`...); el vocabulario
+     * español de las versiones 1.x se sigue aceptando aquí para que subir de
+     * versión no rompa una llamada que ya funcionaba.
+     */
+    private static function modoEnIngles($modo)
+    {
+        $mapa = array(
+            'automatico' => 'automatic',
+            'resumen'    => 'summary',
+            'esperar'    => 'wait',
+            'inmediata'  => 'immediate',
+        );
+
+        return isset($mapa[$modo]) ? $mapa[$modo] : $modo;
     }
 
     /**

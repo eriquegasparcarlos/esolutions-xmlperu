@@ -43,7 +43,7 @@ try { $cuenta->eliminarEmpresa($RUC); } catch (Throwable $e) { /* no existía */
 $empresa = $cuenta->crearEmpresa($RUC, 'EMPRESA PAQUETE SAC', '01', '01');
 
 paso('crearEmpresa devuelve el token de firma', (bool) $empresa->token());
-paso('y las credenciales de login', isset($empresa->credenciales()['usuario']));
+paso('y las credenciales de login', isset($empresa->credenciales()['username']));
 
 $cpe = $empresa->cpe();
 paso('empresa->cpe() da un cliente listo', $cpe instanceof Cpe);
@@ -76,7 +76,7 @@ $comprobante = $cpe->emitir($payload);
 
 paso('emitir devuelve external_id', (bool) $comprobante->externalId());
 paso('trae el XML firmado ya decodificado', str_contains((string) $comprobante->xmlFirmado(), 'Invoice'));
-paso('estado en_cola', $comprobante->estado() === 'en_cola', $comprobante->estado());
+paso('estado queued', $comprobante->estado() === 'queued', (string) $comprobante->estado());
 paso('no está resuelto todavía', ! $comprobante->resuelto());
 
 echo "\n── Consultar y esperar ────────────────────────────────────────────────\n";
@@ -138,7 +138,7 @@ try {
 echo "\n── Login estilo QPSE ──────────────────────────────────────────────────\n";
 
 $cred = $cuenta->credenciales($RUC);
-$porLogin = Cpe::desdeLogin($cred['usuario'], $cred['password']);
+$porLogin = Cpe::desdeLogin($cred['username'], $cred['password']);
 paso('desdeLogin autentica', (bool) $porLogin->token());
 paso('y puede consultar series', is_array($porLogin->series()));
 paso('el token permanente sigue vivo tras el login', is_array($cpe->series()));

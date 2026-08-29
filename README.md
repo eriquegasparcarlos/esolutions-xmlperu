@@ -101,15 +101,15 @@ que SUNAT ya declaró.
 `codigoEstado()` devuelve el código; hay constantes para no escribirlos a mano
 (`Comprobante::ESTADO_RECIBIDO`).
 
-| Código | Estado | Qué significa |
+| Código | `estado()` | Qué significa |
 |---|---|---|
-| `01` | Registrado | Firmado. Aún no salió — o se quedó a medias |
-| `02` | Por enviar | Firmado, esperando a que **tú** lo mandes (envío manual) |
-| `03` | Recibido | Enviado; SUNAT no contesta todavía, o lo está procesando |
-| `04` | Por resumir | Boleta firmada, esperando el resumen del día |
-| `05` | Aceptado | Declarado, sin observaciones |
-| `07` | Observado | **Aceptado** con observaciones. Es válido |
-| `09` | Rechazado | No existe para SUNAT |
+| `01` | `registered` | Firmado. Aún no salió — o se quedó a medias |
+| `02` | `to_send` | Firmado, esperando a que **tú** lo mandes (envío manual) |
+| `03` | `sent` | Enviado; SUNAT no contesta todavía, o lo está procesando |
+| `04` | `to_summarize` | Boleta firmada, esperando el resumen del día |
+| `05` | `accepted` | Declarado, sin observaciones |
+| `07` | `observed` | **Aceptado** con observaciones. Es válido |
+| `09` | `rejected` | No existe para SUNAT |
 
 Los tres primeros son etapas del camino; los tres últimos, desenlaces. Solo esos
 tres hacen `resuelto()` verdadero.
@@ -128,15 +128,15 @@ nombre de clave, ellos siguen valiendo.
 | `serie()` · `numero()` | `series` · `number` | `numero()` devuelve un **entero** |
 | `fechaEmision()` | `date_of_issue` | `Y-m-d` |
 | `hash()` | `hash` | Resumen de la firma |
-| `codigoEstado()` | `state_type_id` | Ver el catálogo de arriba |
-| `estado()` | `state` | El estado en palabras |
-| `resuelto()` · `pendiente()` | `resuelto` | Si SUNAT ya contestó |
+| `codigoEstado()` | `status_code` | Ver el catálogo de arriba |
+| `estado()` | `status` | La palabra máquina: `accepted`, `rejected`… |
+| `resuelto()` · `pendiente()` | `resolved` | Si SUNAT ya contestó |
 | `tieneFirma()` | `has_signed` | Si el XML firmado se puede descargar |
 | `tieneCdr()` | `has_cdr` | Si el CDR ya está |
 | `ticket()` | `ticket` | Solo en guías y resúmenes |
-| `resultado()` | `resultado` | Lo que dijo SUNAT — abajo |
-| `anulado()` · `anuladoEn()` | `anulado` | Si SUNAT aceptó su baja |
-| `baja()` · `motivoDeBaja()` | `baja` | El documento de baja, si lo hay |
+| `resultado()` | `result` | Lo que dijo SUNAT — abajo |
+| `anulado()` · `anuladoEn()` | `voided` · `voided_at` | Si SUNAT aceptó su baja |
+| `baja()` · `motivoDeBaja()` | `void` | El documento de baja, si lo hay |
 
 ## Qué dijo SUNAT: `resultado()`
 
@@ -149,15 +149,15 @@ nombre de clave, ellos siguen valiendo.
 | `errores()` | vacío | Los motivos, uno por línea |
 | `observaciones()` | las del estado «Observado» | vacío |
 | `llegoASunat()` | `true` | `true`/`false`/`null` |
-| `origen()` | `null` | `validacion` · `conexion` · `timeout` · `sunat` · `sistema` |
-| `accion()` | `null` | `reintentar` · `corregir` · `revisar` |
+| `origen()` | `null` | `validation` · `connection` · `timeout` · `sunat` · `system` |
+| `accion()` | `null` | `retry` · `correct` · `review` |
 
 **`codigo()` devuelve una cadena, no un entero:** el `"0"` de aceptación se
 compara como cadena.
 
 **`accion()` es tu switch de errores**: la API ya combinó las banderas y te dice
-qué toca — `reintentar` (mismo payload, misma clave), `corregir` (arregla y emite
-con clave nueva) o `revisar` (consulta antes de actuar).
+qué toca — `retry` (mismo payload, misma clave), `correct` (arregla y emite
+con clave nueva) o `review` (consulta antes de actuar).
 
 **`llegoASunat()` puede ser `null`, y ese `null` importa.** Significa «no se
 sabe», no «no llegó»: es lo que decide si reintentar es seguro. Si llegó, hay que
