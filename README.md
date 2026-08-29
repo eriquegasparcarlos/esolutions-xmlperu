@@ -216,7 +216,7 @@ quieras. Lo devuelve dar de alta la empresa o `POST /v1/empresas/{ruc}/token`.
 $cpe = new Cpe('token_permanente');
 ```
 
-**Login estilo QPSE**: para quien viene de otro proveedor y ya tiene ese flujo
+**Login con usuario y contraseña**: para quien viene de otro proveedor y ya tiene ese flujo
 montado.
 
 ```php

@@ -11,7 +11,7 @@ use GuzzleHttp\Client as GuzzleClient;
  *
  * Se autentica con el token de empresa (ability `cpe:sign`), que es el que
  * devuelve «crear empresa» o `POST /v1/empresas/{ruc}/token`. Si prefieres
- * usuario y contraseña al estilo QPSE, usa `Cpe::desdeLogin()`.
+ * usuario y contraseña —como en muchos otros proveedores—, usa `Cpe::desdeLogin()`.
  *
  * El emisor viaja DENTRO del payload (`company`): la API no lo inyecta. El
  * token dice quién firma, el payload dice quién emite, y tienen que coincidir.
@@ -58,8 +58,8 @@ class Cpe
     }
 
     /**
-     * Inicia sesión con usuario y contraseña (el estilo de QPSE y otros
-     * proveedores) y devuelve un cliente listo para emitir.
+     * Inicia sesión con usuario y contraseña —el estilo habitual en otros
+     * proveedores— y devuelve un cliente listo para emitir.
      *
      * El token que entrega el login **caduca en una hora**. El cliente lo
      * renueva solo al toparse con un 401, así que un proceso largo no se cae a
@@ -303,7 +303,7 @@ class Cpe
 
     /**
      * Firma el XML y encola el envío a SUNAT. Es el reemplazo directo de lo que
-     * hacen SmartPSE, ValidaPSE y QPSE.
+     * hace el endpoint equivalente de tu proveedor actual.
      *
      * Única diferencia con ellos: la respuesta no trae el CDR, porque el envío
      * no ocurre dentro de la petición. El desenlace se consulta después con

@@ -117,8 +117,8 @@ class Cuenta
     }
 
     /**
-     * Usuario y contraseña de la empresa, para quien prefiere el login estilo
-     * QPSE en vez del token directo.
+     * Usuario y contraseña de la empresa, para quien prefiere obtener el token
+     * iniciando sesión en vez de usar el directo.
      *
      * @return array
      */

@@ -48,7 +48,7 @@ class Empresa
     }
 
     /**
-     * Usuario y contraseña, para quien prefiera el login estilo QPSE.
+     * Usuario y contraseña, para quien prefiera obtener el token iniciando sesión.
      *
      * @return array
      */
