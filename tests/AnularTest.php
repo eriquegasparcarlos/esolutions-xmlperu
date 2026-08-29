@@ -117,7 +117,7 @@ class AnularTest extends TestCase
         $cuerpo = json_decode((string) $this->enviadas[0]['request']->getBody(), true);
 
         $this->assertSame('Error en el monto', $cuerpo['reason']);
-        $this->assertStringContainsString('/anular', (string) $this->enviadas[0]['request']->getUri());
+        $this->assertStringContainsString('/void', (string) $this->enviadas[0]['request']->getUri());
     }
 
     public function test_pedir_la_misma_baja_dos_veces_lleva_la_misma_clave(): void

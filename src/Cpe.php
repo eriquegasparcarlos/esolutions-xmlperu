@@ -10,7 +10,7 @@ use GuzzleHttp\Client as GuzzleClient;
  * Cliente de firma: emite, consulta y descarga comprobantes de UNA empresa.
  *
  * Se autentica con el token de empresa (ability `cpe:sign`), que es el que
- * devuelve «crear empresa» o `POST /v1/empresas/{ruc}/token`. Si prefieres
+ * devuelve «crear empresa» o `POST /v1/companies/{ruc}/token`. Si prefieres
  * usuario y contraseña —como en muchos otros proveedores—, usa `Cpe::desdeLogin()`.
  *
  * El emisor viaja DENTRO del payload (`company`): la API no lo inyecta. El
@@ -479,13 +479,13 @@ class Cpe
      */
     public function enviar($externalId)
     {
-        return $this->peticion('POST', '/v1/cpe/' . rawurlencode($externalId) . '/enviar');
+        return $this->peticion('POST', '/v1/cpe/' . rawurlencode($externalId) . '/send');
     }
 
     /** Alias de `enviar()`. @return array */
     public function reenviar($externalId)
     {
-        return $this->peticion('POST', '/v1/cpe/' . rawurlencode($externalId) . '/reenviar');
+        return $this->peticion('POST', '/v1/cpe/' . rawurlencode($externalId) . '/resend');
     }
 
     // ── baja ─────────────────────────────────────────────────────────────────
@@ -518,7 +518,7 @@ class Cpe
     {
         $r = $this->peticion(
             'POST',
-            '/v1/cpe/' . rawurlencode($externalId) . '/anular',
+            '/v1/cpe/' . rawurlencode($externalId) . '/void',
             array('reason' => $motivo),
             array('Idempotency-Key' => 'xmlperu-baja-' . hash('sha256', $externalId . '|' . $motivo))
         );

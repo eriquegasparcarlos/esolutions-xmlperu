@@ -53,7 +53,7 @@ class Cuenta
     /** Empresas de la cuenta. @return array */
     public function empresas()
     {
-        $r = $this->http->json('GET', '/v1/empresas');
+        $r = $this->http->json('GET', '/v1/companies');
 
         return isset($r['data']['companies']) ? $r['data']['companies'] : array();
     }
@@ -61,7 +61,7 @@ class Cuenta
     /** Una empresa por RUC. @return array */
     public function empresa($ruc)
     {
-        $r = $this->http->json('GET', '/v1/empresas/' . rawurlencode($ruc));
+        $r = $this->http->json('GET', '/v1/companies/' . rawurlencode($ruc));
 
         return isset($r['data']['company']) ? $r['data']['company'] : array();
     }
@@ -83,7 +83,7 @@ class Cuenta
      */
     public function crearEmpresa($ruc, $razonSocial, $tipoPlan = '01', $tipoEntorno = '01', $confirmar = false)
     {
-        $r = $this->http->json('POST', '/v1/empresas', array(
+        $r = $this->http->json('POST', '/v1/companies', array(
             'ruc'          => $ruc,
             'business_name' => $razonSocial,
             'plan_type'     => $tipoPlan,
@@ -101,7 +101,7 @@ class Cuenta
      */
     public function nuevoToken($ruc)
     {
-        $r = $this->http->json('POST', '/v1/empresas/' . rawurlencode($ruc) . '/token');
+        $r = $this->http->json('POST', '/v1/companies/' . rawurlencode($ruc) . '/token');
 
         return isset($r['data']['token']['plain_text_token']) ? $r['data']['token']['plain_text_token'] : '';
     }
@@ -124,7 +124,7 @@ class Cuenta
      */
     public function credenciales($ruc)
     {
-        $r = $this->http->json('GET', '/v1/empresas/' . rawurlencode($ruc) . '/credenciales');
+        $r = $this->http->json('GET', '/v1/companies/' . rawurlencode($ruc) . '/credentials');
 
         return isset($r['data']['credentials']) ? $r['data']['credentials'] : array();
     }
@@ -136,7 +136,7 @@ class Cuenta
      */
     public function eliminarEmpresa($ruc)
     {
-        return $this->http->json('DELETE', '/v1/empresas/' . rawurlencode($ruc));
+        return $this->http->json('DELETE', '/v1/companies/' . rawurlencode($ruc));
     }
 
     // ── ajustes ──────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ class Cuenta
      */
     public function plan($ruc, $tipoPlan)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/plan', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/plan', array(
             'plan_type' => $tipoPlan,
         ));
     }
@@ -158,7 +158,7 @@ class Cuenta
      */
     public function entorno($ruc, $tipoEntorno)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/entorno', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/environment', array(
             'environment' => $tipoEntorno,
         ));
     }
@@ -174,7 +174,7 @@ class Cuenta
      */
     public function envio($ruc, $modo)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/envio', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/sending', array(
             'mode' => self::modoEnIngles($modo),
         ));
     }
@@ -195,7 +195,7 @@ class Cuenta
      */
     public function boletas($ruc, $modo)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/boletas', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/receipts', array(
             'mode' => self::modoEnIngles($modo),
         ));
     }
@@ -217,7 +217,7 @@ class Cuenta
      */
     public function respuesta($ruc, $modo)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/respuesta', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/response', array(
             'mode' => self::modoEnIngles($modo),
         ));
     }
@@ -249,7 +249,7 @@ class Cuenta
      */
     public function webhook($ruc, $url)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/webhook', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/webhook', array(
             'url' => $url,
         ));
     }
@@ -264,7 +264,7 @@ class Cuenta
      */
     public function certificado($ruc)
     {
-        $r = $this->http->json('GET', '/v1/empresas/' . rawurlencode($ruc) . '/certificado');
+        $r = $this->http->json('GET', '/v1/companies/' . rawurlencode($ruc) . '/certificate');
 
         return isset($r['data']) ? $r['data'] : array();
     }
@@ -283,7 +283,7 @@ class Cuenta
     public function subirCertificado($ruc, $rutaArchivo, $password = null)
     {
         return $this->http->subir(
-            '/v1/empresas/' . rawurlencode($ruc) . '/certificado',
+            '/v1/companies/' . rawurlencode($ruc) . '/certificate',
             'certificado',
             $rutaArchivo,
             array('password' => $password)
@@ -297,7 +297,7 @@ class Cuenta
      */
     public function quitarCertificado($ruc)
     {
-        return $this->http->json('DELETE', '/v1/empresas/' . rawurlencode($ruc) . '/certificado');
+        return $this->http->json('DELETE', '/v1/companies/' . rawurlencode($ruc) . '/certificate');
     }
 
     /**
@@ -307,7 +307,7 @@ class Cuenta
      */
     public function credencialesGre($ruc, $clientId, $clientSecret)
     {
-        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/credenciales-gre', array(
+        return $this->http->json('PATCH', '/v1/companies/' . rawurlencode($ruc) . '/gre-credentials', array(
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ));

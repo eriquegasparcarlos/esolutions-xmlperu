@@ -216,7 +216,7 @@ se abre una segunda caja: sin esto arrancan en 1 y cada intento se lleva un 409.
 ## Los dos estilos de autenticación
 
 **Token de empresa** (recomendado): no caduca, admite tantos procesos como
-quieras. Lo devuelve dar de alta la empresa o `POST /v1/empresas/{ruc}/token`.
+quieras. Lo devuelve dar de alta la empresa o `POST /v1/companies/{ruc}/token`.
 
 ```php
 $cpe = new Cpe('token_permanente');
@@ -438,7 +438,7 @@ desactivarlo con `$cuenta->respuesta($ruc, 'inmediata')`.
 | `xml($externalId)` | `GET /v1/cpe/{id}/xml` |
 | `cdr($externalId)` · `cdrXml($externalId)` | `GET /v1/cpe/{id}/cdr` — ZIP de SUNAT · XML extraído |
 | `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` — solo en envío manual o si se quedó sin salir |
-| `anular($externalId, $motivo)` | `POST /v1/cpe/{id}/anular` |
+| `anular($externalId, $motivo)` | `POST /v1/cpe/{id}/void` |
 | `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
 | `procesarXml($nombre, $xml)` | `POST /api/cpe/generar` + `/api/cpe/enviar` |
 | `enviarXml($nombre, $id)` | `POST /api/cpe/enviar` |
