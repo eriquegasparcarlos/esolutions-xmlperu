@@ -417,9 +417,13 @@ proveedor anterior.
 $cuenta->respuesta('20000000001', 'esperar');
 ```
 
-Solo aplica a facturas, boletas y notas: los resumenes y las guias los resuelve
-SUNAT por ticket, y ahi no hay CDR que esperar. Si SUNAT tarda de mas, recibes la
-respuesta inmediata y consultas — el comprobante ya esta firmado.
+Aplica a `procesarXml()`, que es una llamada por venta — **no a `enviar()`**, que
+esta pensado para mandar cuando tu decidas y a menudo en lote. Y solo a facturas,
+boletas y notas: los resumenes y las guias los resuelve SUNAT por ticket, y ahi
+no hay CDR que esperar.
+
+Si SUNAT tarda de mas, recibes la respuesta inmediata y consultas — el
+comprobante ya esta firmado.
 
 ## Métodos del cliente de firma
 

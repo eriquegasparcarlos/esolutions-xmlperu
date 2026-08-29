@@ -209,8 +209,11 @@ class Cuenta
      *
      * Es para quien viene de otro proveedor y su código lee el CDR de la
      * respuesta del envío: con `esperar` sigue leyéndolo de ahí, sin tocar nada.
-     * Solo afecta a la superficie de compatibilidad (`/api/cpe/*`); en `/v1` la
-     * respuesta es siempre inmediata.
+     *
+     * Alcance: solo `procesarXml()` —la llamada por venta— dentro de la
+     * superficie de compatibilidad. En `/v1` la respuesta es siempre inmediata,
+     * y `enviar()` tampoco espera: ese camino es para mandar cuando tú decidas,
+     * a menudo en lote, y esperar en cada comprobante saldría caro.
      *
      * Y solo a facturas, boletas y notas: los resúmenes y las guías los resuelve
      * SUNAT por ticket, así que ahí no hay CDR que esperar.
