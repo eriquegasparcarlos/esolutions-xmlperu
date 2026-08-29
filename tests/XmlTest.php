@@ -81,20 +81,59 @@ class XmlTest extends TestCase
         $this->assertSame('<Invoice/>', base64_decode($cuerpo['contenido_archivo']));
     }
 
-    public function test_procesar_firma_y_encola(): void
+    public function test_procesar_hace_las_dos_llamadas_del_flujo(): void
     {
-        $cpe = $this->cpe(array($this->json(202, array(
-            'success'     => true,
-            'estado'      => 'en_cola',
-            'message'     => 'Comprobante encolado para envío a SUNAT.',
-            'external_id' => 'abc-123',
-        ))));
+        // `procesar` ya no existe como endpoint: el flujo que comparten todas
+        // las plataformas es firmar y luego enviar. El paquete lo absorbe para
+        // que quien tenia el atajo no tenga que partir su llamada en dos.
+        $cpe = $this->cpe(array(
+            $this->json(200, array(
+                'success'     => true,
+                'external_id' => 'abc-123',
+                'xml'         => base64_encode('<Invoice firmada="1"/>'),
+            )),
+            $this->json(200, array(
+                'success'       => true,
+                'resuelto'      => true,
+                'state_type_id' => '05',
+                'external_id'   => 'abc-123',
+                'message'       => 'La Factura numero F001-2, ha sido aceptada',
+                'cdr'           => base64_encode('ZIP'),
+            )),
+        ));
 
         $c = $cpe->procesarXml('20000000001-01-F001-2', '<Invoice/>');
 
-        $this->assertSame('en_cola', $c->estado());
+        $this->assertSame('/api/cpe/generar', $this->enviadas[0]['request']->getUri()->getPath());
+        $this->assertSame('/api/cpe/enviar', $this->enviadas[1]['request']->getUri()->getPath());
+
+        $this->assertTrue($c->aceptado(), 'El desenlace viene en la respuesta del envio.');
         $this->assertSame('abc-123', $c->externalId());
-        $this->assertFalse($c->resuelto());
+        $this->assertSame('<Invoice firmada="1"/>', $c->xmlFirmado(), 'El XML firmado del paso 1 no se pierde.');
+    }
+
+    public function test_si_sunat_no_contesta_a_tiempo_queda_pendiente(): void
+    {
+        // El comprobante esta firmado y el envio sigue su curso: reenviarlo
+        // podria duplicarlo, asi que lo que toca es consultar.
+        $cpe = $this->cpe(array(
+            $this->json(200, array(
+                'success' => true, 'external_id' => 'abc-123',
+                'xml' => base64_encode('<Invoice firmada="1"/>'),
+            )),
+            $this->json(202, array(
+                'success'     => true,
+                'estado'      => 'en_cola',
+                'message'     => 'SUNAT no respondió en 5 segundos. El envío quedó encolado.',
+                'external_id' => 'abc-123',
+            )),
+        ));
+
+        $c = $cpe->procesarXml('20000000001-01-F001-2', '<Invoice/>');
+
+        $this->assertTrue($c->pendiente());
+        $this->assertSame('abc-123', $c->externalId());
+        $this->assertSame('<Invoice firmada="1"/>', $c->xmlFirmado());
     }
 
     public function test_un_xml_invalido_no_se_firma(): void

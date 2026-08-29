@@ -1,7 +1,7 @@
 # esolutions/xmlperu
 
 Cliente PHP de la API de [xmlperu.dev](https://xmlperu.dev): firma y emisión de
-comprobantes electrónicos (CPE) a SUNAT/OSE`boletas()`, `respuesta()`, `certificado()`y administración de empresas
+comprobantes electrónicos (CPE) a SUNAT/OSE, y administración de empresas
 emisoras.
 
 - PHP **7.2+**, Laravel **5.7 → 13**, o **standalone** (sin framework).
@@ -385,45 +385,40 @@ use Esolutions\XmlPeru\Cpe;
 // Login con usuario y clave, como en tu proveedor anterior
 $cpe = Cpe::desdeLogin('usuario', 'clave');
 
-// Firma y encola el envio: el reemplazo directo
+// Firma y manda: el reemplazo directo. El CDR viene en la respuesta.
 $c = $cpe->procesarXml('20000000001-01-F001-123', $miXml);
 
-// Consultas por nombre de archivo — no necesitas conocer nuestro external_id
-$estado = $cpe->consultarPorNombre('20000000001-01-F001-123');
-
-if ($estado->valido()) {
-    $cdr = $estado->cdr();   // ya viene en la consulta, no se vuelve a descargar
+if ($c->aceptado()) {
+    $cdr = $c->cdr();
+} elseif ($c->pendiente()) {
+    // SUNAT no contesto a tiempo. NO reenviar: consultar.
+    $c = $cpe->consultarPorNombre('20000000001-01-F001-123');
 }
 ```
 
 | Metodo | Que hace |
 |---|---|
-| `procesarXml($nombreArchivo, $xml)` | Firma y encola el envio |
-| `firmarXml($nombreArchivo, $xml)` | Solo firma; el envio corre por tu cuenta |
+| `procesarXml($nombreArchivo, $xml)` | Firma y manda (las dos llamadas del flujo) |
+| `firmarXml($nombreArchivo, $xml)` | Paso 1: solo firma |
+| `enviarXml($nombreArchivo, $externalId)` | Paso 2: manda y devuelve el desenlace |
 | `consultarPorNombre($nombreArchivo)` | Estado por `RUC-TIPO-SERIE-CORRELATIVO` |
 
 El `$xml` va en texto plano: el paquete lo codifica en base64 por ti.
 
-**La unica diferencia con tu proveedor anterior** es que la respuesta no trae el
-CDR, porque el envio no ocurre dentro de la peticion. Lo que hace valido al
-comprobante es la firma, y esa la tienes al instante; el desenlace llega por el
-webhook o consultando.
+**El flujo es el mismo que ya usas:** firmar y enviar. El resultado de SUNAT
+llega en la respuesta del envio, como en tu plataforma actual.
 
-Si no quieres anadir esa consulta, no la anadas: pon la empresa en modo
-`esperar` y `procesarXml()` devuelve el CDR en la misma llamada, como hacia tu
-proveedor anterior.
+Si tu plataforma tenia el atajo de "firmar y enviar" en una sola llamada
+(`procesar`, `generarenviar`), aqui son dos endpoints — pero `procesarXml()` las
+hace por ti, asi que tu codigo sigue siendo una linea.
 
-```php
-$cuenta->respuesta('20000000001', 'esperar');
-```
+Cuando SUNAT no contesta dentro del plazo, el comprobante vuelve `pendiente()`:
+esta firmado y el envio sigue su curso. **No lo reenvies** — consultalo con
+`consultarPorNombre()` o espera el webhook. En resumenes y guias siempre vuelve
+pendiente, porque SUNAT los resuelve por ticket.
 
-Aplica a `procesarXml()`, que es una llamada por venta — **no a `enviar()`**, que
-esta pensado para mandar cuando tu decidas y a menudo en lote. Y solo a facturas,
-boletas y notas: los resumenes y las guias los resuelve SUNAT por ticket, y ahi
-no hay CDR que esperar.
-
-Si SUNAT tarda de mas, recibes la respuesta inmediata y consultas — el
-comprobante ya esta firmado.
+Si mandas **en lote** y no quieres esperar en cada comprobante, la empresa puede
+desactivarlo con `$cuenta->respuesta($ruc, 'inmediata')`.
 
 ## Métodos del cliente de firma
 
@@ -439,7 +434,8 @@ comprobante ya esta firmado.
 | `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` — solo en envío manual o si se quedó sin salir |
 | `anular($externalId, $motivo)` | `POST /v1/cpe/{id}/anular` |
 | `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
-| `procesarXml($nombre, $xml)` | `POST /api/cpe/procesar` |
+| `procesarXml($nombre, $xml)` | `POST /api/cpe/generar` + `/api/cpe/enviar` |
+| `enviarXml($nombre, $id)` | `POST /api/cpe/enviar` |
 | `consultarPorNombre($nombre)` | `GET /api/cpe/consultar/{filename}` |
 
 ## Tests

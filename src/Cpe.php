@@ -302,25 +302,73 @@ class Cpe
     }
 
     /**
-     * Firma el XML y encola el envío a SUNAT. Es el reemplazo directo de lo que
-     * hace el endpoint equivalente de tu proveedor actual.
+     * Manda a SUNAT un comprobante ya firmado y devuelve su desenlace.
      *
-     * Única diferencia con ellos: la respuesta no trae el CDR, porque el envío
-     * no ocurre dentro de la petición. El desenlace se consulta después con
-     * `consultarPorNombre()`, o llega por el webhook.
+     * Es la segunda mitad del flujo de migración —`firmarXml()` y luego esto—,
+     * y es donde llega el CDR: la API espera unos segundos a SUNAT antes de
+     * responder, igual que hacía tu proveedor anterior.
+     *
+     * Si SUNAT no contesta a tiempo vuelve `pendiente()`: el comprobante está
+     * firmado y el envío sigue su curso. **No lo reenvíes** — consúltalo con
+     * `consultarPorNombre()` o espera el webhook.
+     *
+     * En resúmenes y guías siempre vuelve pendiente: SUNAT los resuelve por
+     * ticket y no hay CDR que esperar.
+     *
+     * @param  string      $nombreArchivo RUC-TIPO-SERIE-CORRELATIVO
+     * @param  string|null $externalId    El que devolvió firmarXml(), si lo tienes
+     * @return Comprobante
+     */
+    public function enviarXml($nombreArchivo, $externalId = null)
+    {
+        $cuerpo = array('xml_filename' => $nombreArchivo);
+
+        if ($externalId !== null) {
+            $cuerpo['external_id'] = $externalId;
+        }
+
+        $r = $this->peticion('POST', '/api/cpe/enviar', $cuerpo);
+
+        // Dos formas según el desenlace: resuelto trae la respuesta de SUNAT
+        // (misma forma que la consulta); encolado trae solo el acuse.
+        if (! empty($r['resuelto'])) {
+            return Comprobante::deConsulta($this, $this->normalizarConsultaXml($r, $nombreArchivo));
+        }
+
+        $r['filename'] = $nombreArchivo;
+
+        return Comprobante::deEmision($this, $r);
+    }
+
+    /**
+     * Firma el XML y lo manda a SUNAT, en un solo método.
+     *
+     * Son dos llamadas —`/api/cpe/generar` y `/api/cpe/enviar`—, que es el flujo
+     * que comparten todas las plataformas. Si la tuya lo hacía en una sola
+     * (`procesar`, `generarenviar`), esto la reemplaza sin que tengas que
+     * partirla tú.
+     *
+     * El `Comprobante` que devuelve trae el **XML firmado** y, si SUNAT contestó
+     * a tiempo, también el **CDR** y el veredicto.
      *
      * @return Comprobante
      */
     public function procesarXml($nombreArchivo, $xml)
     {
-        $r = $this->peticion('POST', '/api/cpe/procesar', array(
-            'nombre_archivo'    => $nombreArchivo,
-            'contenido_archivo' => base64_encode($xml),
-        ));
+        $firmado = $this->firmarXml($nombreArchivo, $xml);
+        $enviado = $this->enviarXml($nombreArchivo, $firmado->externalId());
 
-        $r['filename'] = $nombreArchivo;
+        // El envío no devuelve el XML firmado —ya lo tiene guardado—, así que se
+        // arrastra del primer paso: quien llama a esto espera un comprobante
+        // completo, no las piezas de dos llamadas.
+        $datos = $enviado->datos();
+        $datos['xml'] = base64_encode($firmado->xmlFirmado());
 
-        return Comprobante::deEmision($this, $r);
+        if (! isset($datos['external_id'])) {
+            $datos['external_id'] = $firmado->externalId();
+        }
+
+        return Comprobante::deEmision($this, $datos);
     }
 
     /**
