@@ -107,7 +107,12 @@ class Comprobante
         return $this->dato('series');
     }
 
-    /** @return string|null */
+    /**
+     * Número correlativo. La API lo devuelve como **entero** — compáralo como
+     * entero, o castea: `(string) $c->numero()`.
+     *
+     * @return int|null
+     */
     public function numero()
     {
         return $this->dato('number');
@@ -323,6 +328,39 @@ class Comprobante
         $r = $this->resultado();
 
         return isset($r['llego_a_sunat']) ? (bool) $r['llego_a_sunat'] : null;
+    }
+
+    /**
+     * Dónde se originó el fallo del último intento de envío.
+     *
+     * `validacion` · `conexion` · `timeout` · `sunat` · `sistema`, o `null`
+     * cuando no hubo fallo (aceptado, observado o todavía en curso).
+     *
+     * @return string|null
+     */
+    public function origen()
+    {
+        $r = $this->resultado();
+
+        return isset($r['origen']) ? $r['origen'] : null;
+    }
+
+    /**
+     * Qué conviene hacer, ya decidido por la API: `reintentar`, `corregir` o
+     * `revisar`. Es el switch de tu manejo de errores — combina las banderas
+     * por ti para que no tengas que interpretarlas a mano.
+     *
+     * `revisar` significa «consulta antes de actuar»: aparece cuando no se sabe
+     * si el comprobante llegó (ver `llegoASunat()`), y reenviar a ciegas ahí
+     * puede duplicarlo.
+     *
+     * @return string|null
+     */
+    public function accion()
+    {
+        $r = $this->resultado();
+
+        return isset($r['accion']) ? $r['accion'] : null;
     }
 
     /**

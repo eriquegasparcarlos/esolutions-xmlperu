@@ -154,6 +154,45 @@ class ComprobanteTest extends TestCase
         $this->assertTrue($llego->llegoASunat());
     }
 
+    public function test_el_timeout_trae_el_null_explicito_y_la_accion(): void
+    {
+        // La forma real del caso timeout en /v1: llego_a_sunat viaja en null
+        // -«no se sabe»- y accion dice que toca consultar, no reenviar.
+        $c = $this->consulta(array(
+            'state_type_id' => '03',
+            'resuelto'      => false,
+            'resultado'     => array(
+                'message'       => 'Tiempo de espera agotado esperando la respuesta de SUNAT.',
+                'origen'        => 'timeout',
+                'accion'        => 'revisar',
+                'llego_a_sunat' => null,
+            ),
+        ));
+
+        $this->assertNull($c->llegoASunat(), 'null explicito = no se sabe, nunca false.');
+        $this->assertSame('timeout', $c->origen());
+        $this->assertSame('revisar', $c->accion());
+    }
+
+    public function test_sin_fallo_no_hay_origen_ni_accion(): void
+    {
+        $c = $this->consulta(array(
+            'state_type_id' => '05',
+            'resuelto'      => true,
+            'resultado'     => array('code' => '0', 'message' => 'aceptada', 'llego_a_sunat' => true),
+        ));
+
+        $this->assertNull($c->origen());
+        $this->assertNull($c->accion());
+    }
+
+    public function test_el_numero_es_un_entero_como_lo_manda_la_api(): void
+    {
+        $c = $this->consulta(array('state_type_id' => '01', 'number' => 42));
+
+        $this->assertSame(42, $c->numero(), 'La API manda un entero; el paquete no lo disfraza.');
+    }
+
     public function test_el_catalogo_de_estados_esta_en_constantes(): void
     {
         $this->assertSame('03', Comprobante::ESTADO_RECIBIDO);

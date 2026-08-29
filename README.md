@@ -125,7 +125,7 @@ nombre de clave, ellos siguen valiendo.
 | `externalId()` | `external_id` | Nuestro identificador |
 | `nombreArchivo()` | `filename` | `RUC-TIPO-SERIE-CORRELATIVO` |
 | `tipoDoc()` | `document_type_id` | `01` factura, `03` boleta, `07` NC, `08` ND, `09` guía… |
-| `serie()` · `numero()` | `series` · `number` | |
+| `serie()` · `numero()` | `series` · `number` | `numero()` devuelve un **entero** |
 | `fechaEmision()` | `date_of_issue` | `Y-m-d` |
 | `hash()` | `hash` | Resumen de la firma |
 | `codigoEstado()` | `state_type_id` | Ver el catálogo de arriba |
@@ -149,9 +149,15 @@ nombre de clave, ellos siguen valiendo.
 | `errores()` | vacío | Los motivos, uno por línea |
 | `observaciones()` | las del estado «Observado» | vacío |
 | `llegoASunat()` | `true` | `true`/`false`/`null` |
+| `origen()` | `null` | `validacion` · `conexion` · `timeout` · `sunat` · `sistema` |
+| `accion()` | `null` | `reintentar` · `corregir` · `revisar` |
 
 **`codigo()` devuelve una cadena, no un entero:** el `"0"` de aceptación se
 compara como cadena.
+
+**`accion()` es tu switch de errores**: la API ya combinó las banderas y te dice
+qué toca — `reintentar` (mismo payload, misma clave), `corregir` (arregla y emite
+con clave nueva) o `revisar` (consulta antes de actuar).
 
 **`llegoASunat()` puede ser `null`, y ese `null` importa.** Significa «no se
 sabe», no «no llegó»: es lo que decide si reintentar es seguro. Si llegó, hay que
