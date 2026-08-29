@@ -338,6 +338,68 @@ class Comprobante
         return is_array($w) ? $w : array();
     }
 
+    // ── baja ─────────────────────────────────────────────────────────────────
+
+    /**
+     * ¿Está dado de baja?
+     *
+     * Es el **hecho**: SUNAT aceptó la baja. Una baja pedida y todavía sin
+     * resolver devuelve `false` — puede ser rechazada, y entonces el comprobante
+     * sigue declarado. Para ese caso intermedio, `baja()`.
+     *
+     * @return bool
+     */
+    public function anulado()
+    {
+        return (bool) $this->dato('anulado');
+    }
+
+    /** Cuándo se anuló, en ISO 8601. `null` si no lo está. @return string|null */
+    public function anuladoEn()
+    {
+        return $this->dato('anulado_en');
+    }
+
+    /**
+     * El documento de baja, si se pidió alguno.
+     *
+     * Trae su `external_id` para consultarla, su estado y el motivo. `null` si
+     * nunca se pidió una.
+     *
+     * Distinguir esto de `anulado()` importa: mientras la baja esté en curso, el
+     * comprobante **sigue vigente**. Tratarlo como anulado antes de tiempo es
+     * dar por hecho algo que SUNAT todavía puede rechazar.
+     *
+     * @return array|null
+     */
+    public function baja()
+    {
+        $baja = $this->dato('baja');
+
+        return is_array($baja) ? $baja : null;
+    }
+
+    /** El motivo de la baja. @return string|null */
+    public function motivoDeBaja()
+    {
+        $baja = $this->baja();
+
+        return isset($baja['motivo']) ? $baja['motivo'] : null;
+    }
+
+    /**
+     * El comprobante que esta baja anula.
+     *
+     * Solo viene en la respuesta de `anular()`: es el camino inverso del
+     * `baja()` de la consulta.
+     *
+     * @return string|null
+     */
+    public function anula()
+    {
+        return $this->dato('anula');
+    }
+
     // ── archivos ─────────────────────────────────────────────────────────────
 
     /**

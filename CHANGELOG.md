@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.6.0
+
+### Añadido
+
+- **`anulado()`, `anuladoEn()`, `baja()`, `motivoDeBaja()` y `anula()`** — la
+  consulta ya informa si un comprobante está dado de baja, y el paquete lo
+  expone con accesor en vez de obligar a leer claves internas.
+
+  `anulado()` es el **hecho**: SUNAT aceptó la baja. Una baja pedida y todavía
+  sin resolver devuelve `false` y aparece en `baja()` con su estado — mientras
+  esté en curso el comprobante **sigue declarado**, y darlo por anulado antes de
+  tiempo es dar por hecho algo que SUNAT todavía puede rechazar.
+
 ## v1.5.0
 
 ### Añadido

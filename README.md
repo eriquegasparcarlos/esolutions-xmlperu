@@ -135,6 +135,8 @@ nombre de clave, ellos siguen valiendo.
 | `tieneCdr()` | `has_cdr` | Si el CDR ya está |
 | `ticket()` | `ticket` | Solo en guías y resúmenes |
 | `resultado()` | `resultado` | Lo que dijo SUNAT — abajo |
+| `anulado()` · `anuladoEn()` | `anulado` | Si SUNAT aceptó su baja |
+| `baja()` · `motivoDeBaja()` | `baja` | El documento de baja, si lo hay |
 
 ## Qué dijo SUNAT: `resultado()`
 
@@ -328,8 +330,17 @@ otro:
 
 ```php
 $cpe->consultar($baja->externalId());   // ¿aceptó SUNAT la baja?
-$cpe->consultar($externalId);           // el original: sigue Aceptado, con su CDR
+
+$c = $cpe->consultar($externalId);      // el original
+$c->aceptado();      // true — sigue Aceptado, con su CDR
+$c->anulado();       // true solo cuando SUNAT aceptó la baja
+$c->baja();          // el documento de baja, con su external_id y su estado
+$c->motivoDeBaja();
 ```
+
+**`anulado()` es el hecho, no la intención.** Una baja pedida y todavía sin
+resolver devuelve `false` y aparece en `baja()` con su estado: mientras esté en
+curso, el comprobante **sigue declarado**.
 
 El original **no cambia**: conserva su estado y su CDR, porque SUNAT lo aceptó y
 esa aceptación siguió siendo cierta. Queda marcado como anulado **cuando SUNAT

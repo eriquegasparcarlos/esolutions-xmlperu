@@ -58,9 +58,52 @@ class AnularTest extends TestCase
         $baja = $cpe->anular('original-111', 'Error en el monto');
 
         $this->assertSame('baja-999', $baja->externalId(), 'El external_id es el de la baja.');
-        $this->assertSame('original-111', $baja->dato('anula'));
+        $this->assertSame('original-111', $baja->anula(), 'Y anula() dice a cuál.');
         $this->assertSame('20000000001-RA-20260829-1', $baja->nombreArchivo());
         $this->assertSame('<VoidedDocuments/>', $baja->xmlFirmado());
+    }
+
+    public function test_la_consulta_distingue_anulado_de_baja_en_curso(): void
+    {
+        // Mientras la baja este en curso el comprobante SIGUE VIGENTE: puede ser
+        // rechazada. Darlo por anulado antes de tiempo es dar por hecho algo que
+        // SUNAT todavia puede negar.
+        $cpe = $this->cpe(array(
+            $this->json(200, array('success' => true, 'data' => array('document' => array(
+                'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true,
+                'anulado' => false,
+                'baja' => array('external_id' => 'baja-1', 'state_type_id' => '01', 'motivo' => 'Error'),
+            )))),
+            $this->json(200, array('success' => true, 'data' => array('document' => array(
+                'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true,
+                'anulado' => true, 'anulado_en' => '2026-08-29T00:18:45-05:00',
+                'baja' => array('external_id' => 'baja-1', 'state_type_id' => '05', 'motivo' => 'Error'),
+            )))),
+        ));
+
+        $enCurso = $cpe->consultar('abc-123');
+        $this->assertFalse($enCurso->anulado(), 'Pedida, no aceptada: sigue vigente.');
+        $this->assertSame('baja-1', $enCurso->baja()['external_id']);
+        $this->assertSame('Error', $enCurso->motivoDeBaja());
+
+        $anulado = $cpe->consultar('abc-123');
+        $this->assertTrue($anulado->anulado());
+        $this->assertSame('2026-08-29T00:18:45-05:00', $anulado->anuladoEn());
+        // El estado no cambia: SUNAT lo acepto y su CDR es la prueba.
+        $this->assertTrue($anulado->aceptado());
+    }
+
+    public function test_un_comprobante_sin_baja_lo_dice_sin_rodeos(): void
+    {
+        $cpe = $this->cpe(array($this->json(200, array('success' => true, 'data' => array('document' => array(
+            'external_id' => 'abc-123', 'state_type_id' => '05', 'resuelto' => true, 'anulado' => false, 'baja' => null,
+        ))))));
+
+        $c = $cpe->consultar('abc-123');
+
+        $this->assertFalse($c->anulado());
+        $this->assertNull($c->baja());
+        $this->assertNull($c->motivoDeBaja());
     }
 
     public function test_el_motivo_viaja_en_el_cuerpo(): void
