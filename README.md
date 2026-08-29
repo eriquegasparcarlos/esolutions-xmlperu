@@ -311,6 +311,39 @@ tiempo del contenedor no coinciden. El XML de dentro sí es el original.
 
 Los dos sirven igual para facturas, boletas, notas, **resúmenes y guías**.
 
+## Dar de baja
+
+```php
+$baja = $cpe->anular($externalId, 'Error en el monto');
+```
+
+Mandas el motivo y nada más. De elegir el documento que SUNAT pide para cada caso
+—comunicación de baja para facturas, resumen para boletas, reversión para
+retenciones y percepciones—, numerarlo, firmarlo y perseguir su respuesta nos
+encargamos nosotros.
+
+**Lo que devuelve es la baja, no el comprobante original.** Es un documento
+aparte, con su propio `external_id`, XML y CDR, y se consulta como cualquier
+otro:
+
+```php
+$cpe->consultar($baja->externalId());   // ¿aceptó SUNAT la baja?
+$cpe->consultar($externalId);           // el original: sigue Aceptado, con su CDR
+```
+
+El original **no cambia**: conserva su estado y su CDR, porque SUNAT lo aceptó y
+esa aceptación siguió siendo cierta. Queda marcado como anulado **cuando SUNAT
+acepta la baja**, no al pedirla — una baja fuera de plazo se rechaza y el
+comprobante sigue vivo.
+
+Un aviso de ritmo: **la baja siempre va por ticket**, aunque el comprobante
+original recibiera su CDR en el acto. Es cosa de SUNAT, y por eso tarda más.
+
+| No procede | |
+|---|---|
+| `409` | SUNAT todavía no lo aceptó · ya anulado · baja en curso |
+| `422` | venció el plazo (y el mensaje dice que toca una nota de crédito) · falta el motivo · es una guía |
+
 ## `emitir()` y `enviar()`: cuándo hace falta cada uno
 
 **Normalmente `enviar()` no se usa.** `emitir()` firma y encola el envío él solo.
@@ -377,6 +410,7 @@ webhook o consultando.
 | `xml($externalId)` | `GET /v1/cpe/{id}/xml` |
 | `cdr($externalId)` · `cdrXml($externalId)` | `GET /v1/cpe/{id}/cdr` — ZIP de SUNAT · XML extraído |
 | `enviar($externalId)` · `reenviar($externalId)` | `POST /v1/cpe/{id}/enviar` — solo en envío manual o si se quedó sin salir |
+| `anular($externalId, $motivo)` | `POST /v1/cpe/{id}/anular` |
 | `firmarXml($nombre, $xml)` | `POST /api/cpe/generar` |
 | `procesarXml($nombre, $xml)` | `POST /api/cpe/procesar` |
 | `consultarPorNombre($nombre)` | `GET /api/cpe/consultar/{filename}` |

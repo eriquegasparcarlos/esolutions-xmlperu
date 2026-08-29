@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.5.0
+
+### Añadido
+
+- **`Cpe::anular($externalId, $motivo)`** — dar de baja un comprobante aceptado.
+  Mandas el motivo; de elegir el documento que SUNAT pide en cada caso, numerarlo
+  y firmarlo se encarga la API.
+
+  Devuelve **la baja**, no el comprobante original: un documento aparte con su
+  propio `external_id`, XML y CDR. El original conserva su estado y su CDR, y
+  queda marcado como anulado cuando SUNAT acepta la baja — no al pedirla.
+
+  La clave de idempotencia se deriva del comprobante y el motivo: un reintento
+  tras un corte de red no genera dos bajas, y cada baja es una firma que se cobra.
+
 ## v1.4.0
 
 ### Añadido

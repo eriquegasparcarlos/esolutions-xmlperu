@@ -425,6 +425,44 @@ class Cpe
         return $this->peticion('POST', '/v1/cpe/' . rawurlencode($externalId) . '/reenviar');
     }
 
+    // ── baja ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Da de baja un comprobante ya aceptado por SUNAT.
+     *
+     * Mandas el motivo y nada más. De elegir el documento que SUNAT pide para
+     * cada caso —comunicación de baja para facturas, resumen para boletas,
+     * reversión para retenciones y percepciones—, numerarlo, firmarlo y
+     * perseguir su respuesta nos encargamos nosotros.
+     *
+     * La baja es un **documento aparte**: el `Comprobante` que devuelve tiene su
+     * propio `external_id`, su XML y su CDR, y se consulta como cualquier otro.
+     * El comprobante original no cambia — conserva su estado y su CDR, porque
+     * SUNAT lo aceptó y esa aceptación siguió siendo cierta.
+     *
+     * Queda marcado como anulado **cuando SUNAT acepta la baja**, no al pedirla:
+     * una baja fuera de plazo se rechaza y el comprobante sigue vivo.
+     *
+     * @param  string $externalId  El del comprobante que se anula
+     * @param  string $motivo      Obligatorio: SUNAT lo exige
+     * @return Comprobante         La baja, no el comprobante original
+     *
+     * @throws \Esolutions\XmlPeru\Excepciones\XmlPeruException
+     *         409 si no procede —todavía sin aceptar, ya anulado, baja en curso—;
+     *         422 si no se puede: venció el plazo, falta el motivo, o es una guía.
+     */
+    public function anular($externalId, $motivo)
+    {
+        $r = $this->peticion(
+            'POST',
+            '/v1/cpe/' . rawurlencode($externalId) . '/anular',
+            array('motivo' => $motivo),
+            array('Idempotency-Key' => 'xmlperu-baja-' . hash('sha256', $externalId . '|' . $motivo))
+        );
+
+        return Comprobante::deEmision($this, $r);
+    }
+
     // ── interno ──────────────────────────────────────────────────────────────
 
     /**
