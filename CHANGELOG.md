@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.4.0
+
+### Añadido
+
+- **`Cuenta::boletas($ruc, $modo)`** — elegir si las boletas de una empresa van
+  sueltas (`individual`, el defecto) o esperando el resumen del día (`resumen`).
+  Las notas no se configuran: heredan del comprobante al que afectan.
+- **`Comprobante::ESTADO_POR_RESUMIR`** (`04`) en el catálogo de estados: una
+  boleta firmada esperando su resumen. Antes se confundía con «Registrado», que
+  es la que se quedó a medias por un fallo.
+
 ## v1.3.0
 
 ### Añadido

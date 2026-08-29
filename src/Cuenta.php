@@ -180,6 +180,27 @@ class Cuenta
     }
 
     /**
+     * Cómo se informan las boletas de esta empresa.
+     *
+     * `individual` (por defecto) las manda sueltas, como una factura, y cada una
+     * recibe su propio CDR. `resumen` las firma y las deja esperando el resumen
+     * del día, que es un solo documento para todas.
+     *
+     * Las notas de crédito y débito NO se configuran: heredan del comprobante al
+     * que afectan. Una nota de boleta sigue este modo; una de factura va suelta
+     * siempre, porque el resumen diario no las admite.
+     *
+     * @param  string $modo 'individual' | 'resumen'
+     * @return array
+     */
+    public function boletas($ruc, $modo)
+    {
+        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/boletas', array(
+            'modo' => $modo,
+        ));
+    }
+
+    /**
      * Registra la URL donde avisamos cuando un comprobante queda resuelto.
      *
      * Devuelve el secreto de firma **una sola vez**: guárdalo, es con lo que se

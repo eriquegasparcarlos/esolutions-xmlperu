@@ -25,6 +25,7 @@ class Comprobante
      * | `01`   | Registrado  | Firmado. Aún no salió — o se quedó a medias           |
      * | `02`   | Por enviar  | Firmado y esperando a que TÚ lo mandes (envío manual) |
      * | `03`   | Recibido    | Enviado; SUNAT aún no contesta, o lo está procesando  |
+     * | `04`   | Por resumir | Boleta firmada, esperando el resumen del día          |
      * | `05`   | Aceptado    | Declarado, sin observaciones                          |
      * | `07`   | Observado   | **Aceptado** con observaciones. Es válido             |
      * | `09`   | Rechazado   | No existe para SUNAT. Corregir y volver a emitir      |
@@ -32,6 +33,7 @@ class Comprobante
     const ESTADO_REGISTRADO = '01';
     const ESTADO_POR_ENVIAR = '02';
     const ESTADO_RECIBIDO   = '03';
+    const ESTADO_POR_RESUMIR = '04';
     const ESTADO_ACEPTADO   = '05';
     const ESTADO_OBSERVADO  = '07';
     const ESTADO_RECHAZADO  = '09';
@@ -163,7 +165,7 @@ class Comprobante
         return $estado !== null ? $estado : $this->dato('state');
     }
 
-    /** Código de estado del catálogo interno: 01, 02, 03, 05, 07, 09. */
+    /** Código de estado del catálogo interno: 01, 02, 03, 04, 05, 07, 09. */
     public function codigoEstado()
     {
         return $this->dato('state_type_id');

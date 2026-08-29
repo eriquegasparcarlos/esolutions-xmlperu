@@ -106,6 +106,7 @@ que SUNAT ya declaró.
 | `01` | Registrado | Firmado. Aún no salió — o se quedó a medias |
 | `02` | Por enviar | Firmado, esperando a que **tú** lo mandes (envío manual) |
 | `03` | Recibido | Enviado; SUNAT no contesta todavía, o lo está procesando |
+| `04` | Por resumir | Boleta firmada, esperando el resumen del día |
 | `05` | Aceptado | Declarado, sin observaciones |
 | `07` | Observado | **Aceptado** con observaciones. Es válido |
 | `09` | Rechazado | No existe para SUNAT |
@@ -244,7 +245,7 @@ $cpe = $empresa->cpe();   // cliente ya autenticado, sin copiar nada a mano
 
 Otras operaciones: `empresas()`, `empresa($ruc)`, `nuevoToken($ruc)`,
 `credenciales($ruc)`, `plan()`, `entorno()`, `envio()`, `webhook()`,
-`certificado()`, `subirCertificado()`, `quitarCertificado()`,
+`boletas()`, `certificado()`, `subirCertificado()`, `quitarCertificado()`,
 `credencialesGre()`, `eliminarEmpresa()`.
 
 ## Webhook
