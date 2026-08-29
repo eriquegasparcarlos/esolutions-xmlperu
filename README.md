@@ -1,7 +1,7 @@
 # esolutions/xmlperu
 
 Cliente PHP de la API de [xmlperu.dev](https://xmlperu.dev): firma y emisión de
-comprobantes electrónicos (CPE) a SUNAT/OSE, y administración de empresas
+comprobantes electrónicos (CPE) a SUNAT/OSE`boletas()`, `respuesta()`, `certificado()`y administración de empresas
 emisoras.
 
 - PHP **7.2+**, Laravel **5.7 → 13**, o **standalone** (sin framework).
@@ -247,7 +247,7 @@ $cpe = $empresa->cpe();   // cliente ya autenticado, sin copiar nada a mano
 
 Otras operaciones: `empresas()`, `empresa($ruc)`, `nuevoToken($ruc)`,
 `credenciales($ruc)`, `plan()`, `entorno()`, `envio()`, `webhook()`,
-`boletas()`, `certificado()`, `subirCertificado()`, `quitarCertificado()`,
+`boletas()`, `respuesta()`, `certificado()`, `subirCertificado()`, `quitarCertificado()`,
 `credencialesGre()`, `eliminarEmpresa()`.
 
 ## Webhook
@@ -408,6 +408,18 @@ El `$xml` va en texto plano: el paquete lo codifica en base64 por ti.
 CDR, porque el envio no ocurre dentro de la peticion. Lo que hace valido al
 comprobante es la firma, y esa la tienes al instante; el desenlace llega por el
 webhook o consultando.
+
+Si no quieres anadir esa consulta, no la anadas: pon la empresa en modo
+`esperar` y `procesarXml()` devuelve el CDR en la misma llamada, como hacia tu
+proveedor anterior.
+
+```php
+$cuenta->respuesta('20000000001', 'esperar');
+```
+
+Solo aplica a facturas, boletas y notas: los resumenes y las guias los resuelve
+SUNAT por ticket, y ahi no hay CDR que esperar. Si SUNAT tarda de mas, recibes la
+respuesta inmediata y consultas — el comprobante ya esta firmado.
 
 ## Métodos del cliente de firma
 

@@ -201,6 +201,31 @@ class Cuenta
     }
 
     /**
+     * Cuándo responde el envío de esta empresa.
+     *
+     * `inmediata` (por defecto) responde en el acto y el CDR se recoge con una
+     * consulta. `esperar` aguarda unos segundos a que SUNAT resuelva y devuelve
+     * el CDR en la misma llamada.
+     *
+     * Es para quien viene de otro proveedor y su código lee el CDR de la
+     * respuesta del envío: con `esperar` sigue leyéndolo de ahí, sin tocar nada.
+     * Solo afecta a la superficie de compatibilidad (`/api/cpe/*`); en `/v1` la
+     * respuesta es siempre inmediata.
+     *
+     * Y solo a facturas, boletas y notas: los resúmenes y las guías los resuelve
+     * SUNAT por ticket, así que ahí no hay CDR que esperar.
+     *
+     * @param  string $modo 'inmediata' | 'esperar'
+     * @return array
+     */
+    public function respuesta($ruc, $modo)
+    {
+        return $this->http->json('PATCH', '/v1/empresas/' . rawurlencode($ruc) . '/respuesta', array(
+            'modo' => $modo,
+        ));
+    }
+
+    /**
      * Registra la URL donde avisamos cuando un comprobante queda resuelto.
      *
      * Devuelve el secreto de firma **una sola vez**: guárdalo, es con lo que se
